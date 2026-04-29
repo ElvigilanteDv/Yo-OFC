@@ -8,15 +8,14 @@ const removeCoins = {
     name: 'removecoins',
     alias: ['quitarcoins', 'delcoins', 'removerdinero'],
     category: 'owner',
+    desc: 'Confisca monedas de un usuario (primero de la cartera y luego del banco).',
     isOwner: true,
     noPrefix: true,
-    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -86,7 +85,6 @@ const removeCoins = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error interno al procesar la sanción.`);
         }
     }
