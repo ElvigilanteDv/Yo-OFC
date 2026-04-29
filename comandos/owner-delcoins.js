@@ -14,6 +14,14 @@ const removeCoins = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el desarrollador principal tiene permisos para confiscar fondos.`);
+            }
+
             let targetJid = null;
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
                 targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
