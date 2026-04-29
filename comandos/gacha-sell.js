@@ -9,10 +9,13 @@ const sellCommand = {
     name: 'sell',
     alias: ['vender'],
     category: 'gacha',
+    desc: 'Pon uno de tus personajes en el mercado del grupo para que otros puedan comprarlo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const pjId = args[0];
             const price = parseInt(args[1]);
@@ -21,13 +24,17 @@ const sellCommand = {
                 return m.reply(`*${config.visuals.emoji2}* \`Uso Incorrecto\`\n• Usa el comando de la siguiente manera:\n> #sell (ID) (Precio)`);
             }
 
+            if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: DB Gacha no encontrada.`);
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
-            if (!gachaDB[pjId]) return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe. Revisa bien los datos antes de ingresar un id.`);
+
+            if (!gachaDB[group] || !gachaDB[group][pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe en este grupo.`);
+            }
             
-            const pj = gachaDB[pjId];
+            const pj = gachaDB[group][pjId];
             if (pj.owner !== user) return m.reply(`*${config.visuals.emoji2}* ¡Este personaje no te pertenece!`);
 
-            const minPrice = pj.value + 1000;
+            const minPrice = (pj.value || 0) + 1000;
             if (price < minPrice) {
                 return m.reply(`*${config.visuals.emoji2}* El precio mínimo de venta es *¥${minPrice.toLocaleString()}*.`);
             }
@@ -35,7 +42,9 @@ const sellCommand = {
             if (!fs.existsSync(shopPath)) fs.writeFileSync(shopPath, JSON.stringify({}));
             let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
 
-            shopDB[pjId] = {
+            if (!shopDB[group]) shopDB[group] = {};
+
+            shopDB[group][pjId] = {
                 id: pjId,
                 name: pj.name,
                 seller: user,
@@ -44,7 +53,7 @@ const sellCommand = {
                 date: Date.now()
             };
 
-            gachaDB[pjId].status = 'en_venta';
+            gachaDB[group][pjId].status = 'en_venta';
 
             fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
             fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
