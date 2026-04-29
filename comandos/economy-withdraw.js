@@ -8,21 +8,22 @@ const withdrawCommand = {
     name: 'withdraw',
     alias: ['ret', 'retirar', 'wd'],
     category: 'economy',
-    isOwner: false,
+    desc: 'Retira una cantidad de dinero de tu banco para pasarlo a tu cartera.',
     noPrefix: true,
-    isAdmin: false,
-    isGroup: false,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0];
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[user]) {
-                db[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            if (!db[group]) db[group] = {};
+            if (!db[group][user]) {
+                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
             }
 
-            const userData = db[user];
+            const userData = db[group][user];
             let amount = args[0];
 
             if (!amount) return m.reply(`*${config.visuals.emoji2}* \`FALTAN DATOS\`\n\nIngresa una cantidad o usa *all*.\n*Ejemplo:* #ret 5000`);
@@ -38,7 +39,7 @@ const withdrawCommand = {
 
             userData.bank -= amount;
             userData.wallet += amount;
-            db[user] = userData;
+            db[group][user] = userData;
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 
             await conn.sendMessage(m.chat, { 
