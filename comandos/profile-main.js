@@ -13,6 +13,7 @@ const profileCommand = {
     name: 'profile',
     alias: ['perfil'],
     category: 'profile',
+    desc: 'Muestra tu ficha de perfil con info de economía, RPG, gacha y estado civil.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -88,7 +89,6 @@ const profileCommand = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al cargar el perfil.`);
         }
     }
