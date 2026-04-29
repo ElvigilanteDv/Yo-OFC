@@ -13,6 +13,14 @@ const deleteSession = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el desarrollador principal puede gestionar el borrado de sesiones.`);
+            }
+
             if (!args[0]) {
                 return m.reply(`*${config.visuals.emoji2}* \`Uso Incorrecto\`\n\n> #deletesession (número)\n> #deletesession all`);
             }
@@ -21,7 +29,9 @@ const deleteSession = {
                 const sessions = fs.readdirSync(sessionsPath);
 
                 for (const [jid, sock] of global.subBots.entries()) {
-                    await sock.logout();
+                    try {
+                        await sock.logout();
+                    } catch (e) {}
                     global.subBots.delete(jid);
                 }
 
@@ -43,7 +53,9 @@ const deleteSession = {
 
             if (global.subBots.has(targetJid)) {
                 const sock = global.subBots.get(targetJid);
-                await sock.logout();
+                try {
+                    await sock.logout();
+                } catch (e) {}
                 global.subBots.delete(targetJid);
             }
 
