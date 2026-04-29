@@ -6,12 +6,14 @@ const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const economyInfoCommand = {
     name: 'economy',
-    alias: ['eco', 'estado'],
+    alias: ['ecoinfo', 'einfo'],
     category: 'economy',
+    desc: 'Consulta los tiempos de espera y el balance total de un usuario.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
             if (!targetJid) targetJid = m.sender;
 
@@ -21,11 +23,11 @@ const economyInfoCommand = {
             if (!fs.existsSync(dbPath)) return m.reply('Error: DB no encontrada.');
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[user]) {
-                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros económicos.`);
+            if (!db[group] || !db[group][user]) {
+                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros económicos en este grupo.`);
             }
 
-            const data = db[user];
+            const data = db[group][user];
             const now = Date.now();
 
             const formatTime = (lastUsed) => {
@@ -63,7 +65,6 @@ const economyInfoCommand = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply('Error al obtener la información económica.');
         }
     }
