@@ -8,19 +8,22 @@ const depCommand = {
     name: 'deposit',
     alias: ['dep', 'd', 'depositar'],
     category: 'economy',
+    desc: 'Asegura tus coins enviándolas de tu cartera al banco para protegerlas.',
     isOwner: false,
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[user]) {
-                db[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            if (!db[group]) db[group] = {};
+            if (!db[group][user]) {
+                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
             }
 
-            const userData = db[user];
+            const userData = db[group][user];
 
             if (userData.wallet <= 0) {
                 return m.reply(`*${config.visuals.emoji2}* \`CARTERA VACÍA\`\n\nNo tienes dinero en tu cartera para depositar.\n\n> ¡Usa los comandos de economía como *#work* o *#crime* para ganar dinero!`);
@@ -43,7 +46,7 @@ const depCommand = {
 
             userData.wallet -= amount;
             userData.bank += amount;
-            db[user] = userData;
+            db[group][user] = userData;
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
 
             await conn.sendMessage(m.chat, { 
