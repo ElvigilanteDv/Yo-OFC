@@ -9,10 +9,12 @@ const claimCard = {
     name: 'target',
     alias: ['usartarjeta', 'tarjeta'],
     category: 'economy',
-    isGroup: false,
+    desc: 'Reclama el saldo de una tarjeta de regalo mediante su código único.',
+    isGroup: true,
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix) => {
+        const group = m.chat;
         const senderJid = m.sender.split('@')[0].split(':')[0];
         const inputCode = args[0];
 
@@ -44,16 +46,18 @@ const claimCard = {
 
             let ecoDb = JSON.parse(fs.readFileSync(economyPath, 'utf-8'));
 
-            if (!ecoDb[senderJid]) {
-                ecoDb[senderJid] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            if (!ecoDb[group]) ecoDb[group] = {};
+            if (!ecoDb[group][senderJid]) {
+                ecoDb[group][senderJid] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
             }
 
             const montoFinal = Number(card.monto);
-            ecoDb[senderJid].bank = Number(ecoDb[senderJid].bank || 0) + montoFinal;
+            ecoDb[group][senderJid].bank = Number(ecoDb[group][senderJid].bank || 0) + montoFinal;
 
             dbCards.tarjetas[cardIndex].usada = true;
             dbCards.tarjetas[cardIndex].reclamadaPor = senderJid;
             dbCards.tarjetas[cardIndex].fechaReclamo = new Date().toISOString();
+            dbCards.tarjetas[cardIndex].grupoReclamo = group;
 
             fs.writeFileSync(economyPath, JSON.stringify(ecoDb, null, 2), 'utf-8');
             fs.writeFileSync(tarjetasPath, JSON.stringify(dbCards, null, 2), 'utf-8');
