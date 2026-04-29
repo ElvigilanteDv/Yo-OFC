@@ -13,20 +13,28 @@ const deleteMood = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el administrador principal puede realizar la purga de SubMoods.`);
+            }
+
             if (!args[0]) {
                 return m.reply(`*${config.visuals.emoji2}* \`Uso Incorrecto\`\n\n> #delmood (número)\n> #delmood all`);
             }
 
             if (args[0].toLowerCase() === 'all') {
                 if (!fs.existsSync(moodPath)) return m.reply(`*${config.visuals.emoji2}* No hay sesiones de Moods para eliminar.`);
-                
+
                 const sessions = fs.readdirSync(moodPath);
 
                 for (const [jid, sock] of global.moodBots.entries()) {
                     try {
                         await sock.logout();
-                        global.moodBots.delete(jid);
                     } catch (err) {}
+                    global.moodBots.delete(jid);
                 }
 
                 sessions.forEach(file => {
