@@ -11,6 +11,14 @@ const resetCommand = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el desarrollador principal puede resetear las bases de datos.`);
+            }
+
             const folder = args[0];
             let file = args[1];
 
@@ -43,7 +51,7 @@ const resetCommand = {
                         { "codigo": "KZM-1054-LP", "cuenta": "ACC-002", "monto": 100000, "usada": false },
                         { "codigo": "KZM-8832-ML", "cuenta": "ACC-003", "monto": 100000, "usada": false },
                         { "codigo": "KZM-4490-ZS", "cuenta": "ACC-004", "monto": 100000, "usada": false },
-                        { "codigo": "KZM-2210-BK", "cuenta": "ACC-005", "monto": 100000, "usada": false },
+                        { "codigo": "KZM-2210-BK", "cuenta": "ACC-010", "monto": 100000, "usada": false },
                         { "codigo": "KZM-6673-DJ", "cuenta": "ACC-006", "monto": 100000, "usada": false },
                         { "codigo": "KZM-3381-FW", "cuenta": "ACC-007", "monto": 100000, "usada": false },
                         { "codigo": "KZM-9902-GH", "cuenta": "ACC-008", "monto": 100000, "usada": false },
@@ -52,16 +60,15 @@ const resetCommand = {
                     ]
                 };
             } else {
-                // Si es cualquier otro archivo, se resetea como un objeto vacío por seguridad
                 initialData = {};
             }
 
             await fs.writeJson(dbPath, initialData, { spaces: 2 });
 
             const successMsg = `*${config.visuals.emoji3} \`RESET EXITOSO\` ${config.visuals.emoji3}*\n\nBase de datos \`${file}.json\` restaurada a valores de fábrica.`;
-            
+
             await m.reply(successMsg);
-            await conn.sendMessage(m.sender, { text: successMsg });
+            await conn.sendMessage(realOwnerNumber + '@s.whatsapp.net', { text: successMsg });
 
         } catch (e) {
             console.error(e);
