@@ -8,6 +8,7 @@ const delBirth = {
     name: 'delbirth',
     alias: ['borrarcumple'],
     category: 'profile',
+    desc: 'Elimina tu fecha de nacimiento registrada en el sistema.',
     noPrefix: true,
 
     run: async (conn, m) => {
