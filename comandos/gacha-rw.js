@@ -3,47 +3,55 @@ import fs from 'fs';
 import path from 'path';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const ecoPath = path.resolve('./config/database/economy/economy.json');
 const cooldowns = new Map();
 
 const rwCommand = {
     name: 'rw',
     alias: ['roll', 'waifu'],
     category: 'gacha',
+    desc: 'Realiza un roll para descubrir un nuevo personaje en el grupo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const ahora = Date.now();
+            const cooldownKey = `${group}-${user}`;
 
-            if (cooldowns.has(user)) {
-                const restante = cooldowns.get(user) + 10 * 60 * 1000 - ahora;
+            if (cooldowns.has(cooldownKey)) {
+                const restante = cooldowns.get(cooldownKey) + 10 * 60 * 1000 - ahora;
                 if (restante > 0) return m.reply(`*${config.visuals.emoji2}* ¡Espera! Faltan ${Math.ceil(restante / 60000)} min.`);
             }
 
+            if (!fs.existsSync(gachaPath)) return m.reply('Error: Base de datos gacha no encontrada.');
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
-            let ecoDB = JSON.parse(fs.readFileSync(ecoPath, 'utf-8'));
 
-            const saldo = ecoDB[user]?.wallet || 0;
-            
-            let libres = Object.keys(gachaDB).filter(id => gachaDB[id].status === 'libre');
-            let domados = Object.keys(gachaDB).filter(id => gachaDB[id].status !== 'libre');
+            if (!gachaDB[group]) return m.reply('No hay personajes configurados para este grupo.');
+
+            let allIds = Object.keys(gachaDB[group]);
+            let libresNoSimpson = allIds.filter(id => 
+                gachaDB[group][id].status === 'libre' && 
+                !gachaDB[group][id].source.toLowerCase().includes('simpson')
+            );
+
+            let simpsonsLibres = allIds.filter(id => 
+                gachaDB[group][id].status === 'libre' && 
+                gachaDB[group][id].source.toLowerCase().includes('simpson')
+            );
 
             let keys;
-            if (domados.length > 0 && Math.random() <= 0.01) {
-                keys = domados;
+            if (libresNoSimpson.length > 0) {
+                keys = libresNoSimpson;
+            } else if (simpsonsLibres.length > 0) {
+                keys = simpsonsLibres;
             } else {
-                keys = libres.length > 0 ? libres : Object.keys(gachaDB);
-            }
-
-            if (saldo < 45000 && Math.random() > 0.05) {
-                let keysFiltradas = keys.filter(id => gachaDB[id].value < 40000);
-                if (keysFiltradas.length > 0) keys = keysFiltradas;
+                keys = allIds;
             }
 
             const randomId = keys[Math.floor(Math.random() * keys.length)];
-            const pj = gachaDB[randomId];
+            const pj = gachaDB[group][randomId];
 
             let caption = `*» (❍ᴥ❍ʋ) \`GACHA ROLL\` «*\n\n`;
             caption += `*Nombre:* ${pj.name}\n`;
@@ -59,13 +67,13 @@ const rwCommand = {
                 mentions: pj.owner ? [pj.owner + '@s.whatsapp.net'] : []
             }, { quoted: m });
 
-            if (!global.db.data.chats[m.chat].rolls) global.db.data.chats[m.chat].rolls = {};
-            global.db.data.chats[m.chat].rolls[sent.key.id] = { 
+            if (!global.db.data.chats[group].rolls) global.db.data.chats[group].rolls = {};
+            global.db.data.chats[group].rolls[sent.key.id] = { 
                 id: randomId, 
                 expiresAt: ahora + 60000 
             };
 
-            cooldowns.set(user, ahora);
+            cooldowns.set(cooldownKey, ahora);
 
         } catch (e) {
             m.reply(`*${config.visuals.emoji2}* Error en el sistema de gacha.`);
