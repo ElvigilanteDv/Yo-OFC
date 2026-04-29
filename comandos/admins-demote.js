@@ -4,6 +4,7 @@ const demoteCommand = {
     name: 'demote',
     alias: ['quitaradmin', 'degradar'],
     category: 'admins',
+    desc: 'Remueve los privilegios de administrador a un usuario mencionado o respondido.',
     isAdmin: true,
     noPrefix: true,
 
