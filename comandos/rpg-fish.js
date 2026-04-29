@@ -11,6 +11,7 @@ const fishCommand = {
     name: 'pescar',
     alias: ['fish', 'pesca'],
     category: 'rpg',
+    desc: 'Intenta pescar en el río para ganar coins. Cuidado con perder la carnada.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -25,9 +26,7 @@ const fishCommand = {
             let ecoDb = await fs.readJson(ecoPath);
             let invDb = await fs.readJson(invPath);
 
-            if (!ecoDb[user]) {
-                ecoDb[user] = { wallet: 0, bank: 0, lastFish: 0, fishPenalty: false };
-            }
+            if (!ecoDb[user]) ecoDb[user] = { wallet: 0, bank: 0, lastFish: 0, fishPenalty: false };
 
             const now = Date.now();
             const lastTime = ecoDb[user].lastFish || 0;
@@ -56,7 +55,6 @@ const fishCommand = {
                 ecoDb[user].lastFish = now;
                 ecoDb[user].fishPenalty = true; 
                 await fs.writeJson(ecoPath, ecoDb, { spaces: 2 });
-
                 return m.reply(`*${config.visuals.emoji2}* \`¡PERDISTE LA CARNADA!\`\n\n${failPhrase}\n\n> Tu próximo intento tardará **10 minutos** por el fallo.`);
             }
 
@@ -70,19 +68,9 @@ const fishCommand = {
 
             await fs.writeJson(ecoPath, ecoDb, { spaces: 2 });
 
-            const textoExito = `*${config.visuals.emoji3}* \`PESCA EXITOSA\` *${config.visuals.emoji3}*
-
-${randomPhrase}
-
-🎣 *Peces capturados:* ${fishCaught}
-💰 *Ganancia total:* ¥${totalEarned.toLocaleString()} coins
-
-> El dinero se guardó en tu cartera. Tu siguiente espera será de **5 minutos**.`;
-
+            const textoExito = `*${config.visuals.emoji3}* \`PESCA EXITOSA\` *${config.visuals.emoji3}*\n\n${randomPhrase}\n\n🎣 *Peces capturados:* ${fishCaught}\n💰 *Ganancia total:* ¥${totalEarned.toLocaleString()} coins\n\n> El dinero se guardó en tu cartera. Tu siguiente espera será de **5 minutos**.`;
             await m.reply(textoExito);
-
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en el sistema de pesca.`);
         }
     }
