@@ -5,6 +5,7 @@ const tourlCommand = {
     name: 'tourl',
     alias: ['url', 'imglink', 'subir'],
     category: 'tools',
+    desc: 'Carga imágenes o stickers al servidor de Yotsuba para generar un enlace público.',
     isOwner: false,
     noPrefix: true,
     isAdmin: false,
@@ -15,7 +16,7 @@ const tourlCommand = {
         const mime = (q.msg || q).mimetype || q.mediaType || '';
 
         if (!mime || !/image|sticker/.test(mime)) {
-            return m.reply(`*${config.visuals.emoji2}* \`Aviso de detección\`\n\nResponde a una imagen con el comando *${usedPrefix}tourl* para poder generar tu enlace.`);
+            return m.reply(`*${config.visuals.emoji2}* Responde a una imagen con el comando *${usedPrefix}tourl* para generar tu enlace.`);
         }
 
         try {
@@ -25,12 +26,11 @@ const tourlCommand = {
             const link = await uploadToYotsuba(media, mime);
             const tipo = mime.split("/")[1].toUpperCase();
 
-            const textoExito = `*${config.visuals.emoji3}* \`CARGA EXITOSA\` *${config.visuals.emoji3}*\n\n*🚀 Enlace:* upload.yotsuba.giize.com${link}\n*📂 Tipo:* ${tipo}\n\n> ¡Sigue creando contenido asombroso!`;
+            const textoExito = `*${config.visuals.emoji3}* \`CARGA EXITOSA\` *${config.visuals.emoji3}*\n\n*🚀 Enlace:* https://upload.yotsuba.giize.com${link}\n*📂 Tipo:* ${tipo}\n\n> ¡Enlace generado correctamente!`;
 
             await conn.sendMessage(m.chat, { text: textoExito }, { quoted: m });
-
         } catch (err) {
-            m.reply(`*${config.visuals.emoji2}* Error en Servidor\nNo se pudo procesar la subida.`);
+            m.reply(`*${config.visuals.emoji2}* Error en el servidor de carga.`);
         }
     }
 };
