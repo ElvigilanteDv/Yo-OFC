@@ -8,6 +8,7 @@ const delAge = {
     name: 'delage',
     alias: ['borraredad'],
     category: 'profile',
+    desc: 'Elimina tu registro de edad y cumpleaños de la base de datos.',
     noPrefix: true,
 
     run: async (conn, m) => {
