@@ -7,10 +7,8 @@ const statusCommand = {
     name: 'status',
     alias: ['botinfo', 'infobot'],
     category: 'main',
-    isOwner: false,
+    desc: 'Muestra información técnica sobre el estado del bot y el servidor.',
     noPrefix: true,
-    isAdmin: false,
-    isGroup: false,
 
     run: async (conn, m) => {
         try {
