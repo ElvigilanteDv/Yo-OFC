@@ -4,6 +4,7 @@ const closeGroup = {
     name: 'close',
     alias: ['cerrargroup', 'cerrar'],
     category: 'admins',
+    desc: 'Cierra el grupo para que solo los administradores puedan enviar mensajes.',
     isAdmin: true,
     noPrefix: true,
 
