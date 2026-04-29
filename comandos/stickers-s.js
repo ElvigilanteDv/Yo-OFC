@@ -5,7 +5,8 @@ import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 const stickerCommand = {
     name: 'sticker',
     alias: ['s', 'stiker', 'wm'],
-    category: 'tools',
+    category: 'stickers',
+    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados.',
     isGroup: false,
     noPrefix: true,
 
@@ -15,7 +16,7 @@ const stickerCommand = {
             let mime = (q.msg || q).mimetype || q.mimetype || '';
 
             if (!/image|video|webp/.test(mime)) {
-                return m.reply(`*${config.visuals.emoji2}* Debes ingresar responder a una imagen para crear el sticker.\n> ¡Se inteligente y mira el menú antes de ingresar comandos de manera random!`);
+                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video para crear el sticker.`);
             }
 
             let img = await q.download();
@@ -32,14 +33,14 @@ const stickerCommand = {
                 type: StickerTypes.FULL,
                 categories: ['🤩'],
                 id: m.id,
-                quality: 70,
+                quality: 50,
             });
 
             const buffer = await sticker.toBuffer();
             await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m });
 
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error interno.`);
+            m.reply(`*${config.visuals.emoji2}* Error interno al procesar el sticker.`);
         }
     }
 };
