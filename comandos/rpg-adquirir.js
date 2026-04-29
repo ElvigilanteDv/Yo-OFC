@@ -9,13 +9,14 @@ const adquirirCommand = {
     name: 'adquirir',
     alias: ['comprar'],
     category: 'rpg',
+    desc: 'Compra objetos especiales de la tienda usando tus coins (cartera o banco).',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
             const user = m.sender.split('@')[0].split(':')[0];
             const itemInput = args[0]?.toLowerCase();
-            let amount = parseInt(args[1]) || 1; // Si no pone cantidad, por defecto es 1
+            let amount = parseInt(args[1]) || 1;
 
             if (!itemInput) return m.reply(`*${config.visuals.emoji2}* Indica qué deseas comprar.\nEjemplo: *#adquirir 1 5*`);
             
@@ -50,7 +51,6 @@ const adquirirCommand = {
                 return m.reply(`*${config.visuals.emoji2}* No tienes suficientes coins para comprar *${amount}x ${item.nombre}*.\nTotal necesario: *¥${totalCost.toLocaleString()}*`);
             }
 
-            // Cobro inteligente: Cartera -> Banco
             let remainingToPay = totalCost;
             if (ecoDb[user].wallet >= remainingToPay) {
                 ecoDb[user].wallet -= remainingToPay;
@@ -60,7 +60,6 @@ const adquirirCommand = {
                 ecoDb[user].bank = (ecoDb[user].bank || 0) - remainingToPay;
             }
 
-            // Actualizar Inventario
             if (!invDb[user]) invDb[user] = { iman: 0, trebol: 0, escudo: 0, amuleto: 0 };
             invDb[user][item.id] = (invDb[user][item.id] || 0) + amount;
 
@@ -79,7 +78,6 @@ Articulo: *${item.nombre}*
             await m.reply(textoExito);
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Hubo un error en la transacción.`);
         }
     }
