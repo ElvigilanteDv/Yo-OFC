@@ -6,6 +6,7 @@ const pfpCommand = {
     name: 'pfp',
     alias: ['pfp'],
     category: 'tools',
+    desc: 'Obtiene la foto de perfil de un usuario mencionado o del que ejecuta el comando.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -32,9 +33,7 @@ const pfpCommand = {
                 caption: `*${config.visuals.emoji3} \`FOTO DE PERFIL\` ${config.visuals.emoji3}*\n\n> ➪ *Usuario:* @${user}`, 
                 mentions: mentions
             }, { quoted: m });
-
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al obtener la foto de perfil.`);
         }
     }
