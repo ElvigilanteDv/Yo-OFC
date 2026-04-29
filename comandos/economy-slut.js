@@ -9,19 +9,26 @@ const slutCommand = {
     name: 'slut',
     alias: ['prostituirse', 'escenario'],
     category: 'economy',
+    desc: 'Trabaja en el escenario para ganar coins, con un pequeño riesgo de tener una mala noche.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const now = Date.now();
             const cooldown = 10 * 60 * 1000;
 
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-            if (!db[user]) db[user] = { wallet: 0, bank: 0, slut: { lastUsed: 0 } };
-            if (!db[user].slut) db[user].slut = { lastUsed: 0 };
 
-            const timePassed = now - db[user].slut.lastUsed;
+            if (!db[group]) db[group] = {};
+            if (!db[group][user]) {
+                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 }, slut: { lastUsed: 0 } };
+            }
+            if (!db[group][user].slut) db[group][user].slut = { lastUsed: 0 };
+
+            const userData = db[group][user];
+            const timePassed = now - userData.slut.lastUsed;
 
             if (timePassed < cooldown) {
                 const rem = cooldown - timePassed;
@@ -33,15 +40,16 @@ const slutCommand = {
 
             if (isLoss) {
                 const frase = loseFrases[Math.floor(Math.random() * loseFrases.length)];
-                db[user].wallet = Math.max(0, (db[user].wallet || 0) - amount);
+                userData.wallet = Math.max(0, (userData.wallet || 0) - amount);
                 await m.reply(`*${config.visuals.emoji2}* \`MALA NOCHE\`\n\n${frase}\n*Perdiste:* ¥${amount.toLocaleString()}`);
             } else {
                 const frase = winFrases[Math.floor(Math.random() * winFrases.length)];
-                db[user].wallet = (db[user].wallet || 0) + amount;
+                userData.wallet = (userData.wallet || 0) + amount;
                 await m.reply(`*${config.visuals.emoji3}* \`NOCHE DE ÉXITO\`\n\n${frase}\n*Ganaste:* ¥${amount.toLocaleString()}`);
             }
 
-            db[user].slut.lastUsed = now; 
+            userData.slut.lastUsed = now; 
+            db[group][user] = userData;
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
 
         } catch (e) {
