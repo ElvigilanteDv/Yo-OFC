@@ -8,6 +8,7 @@ const divorce = {
     name: 'divorce',
     alias: ['divorcio', 'separarse'],
     category: 'profile',
+    desc: 'Disuelve tu matrimonio actual y vuelve al estado de soltería.',
     noPrefix: true,
 
     run: async (conn, m) => {
