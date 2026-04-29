@@ -4,6 +4,7 @@ const kickCommand = {
     name: 'kick',
     alias: ['sacar', 'ban', 'eliminar'],
     category: 'admins',
+    desc: 'Expulsa a un miembro del grupo mediante una mención o respondiendo a su mensaje.',
     isAdmin: true,
     noPrefix: true,
 
