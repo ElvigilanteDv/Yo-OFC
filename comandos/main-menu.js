@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { menuCategories } from '../config/menu.js';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -30,6 +31,8 @@ const menuCommand = {
                 currentBotType = 'SubBot';
             } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
                 settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+                currentBotType = 'Mood';
+            } else {
                 currentBotType = 'Mood';
             }
 
@@ -80,7 +83,7 @@ const menuCommand = {
                 subHeader = `*☞︎︎︎ Aqui está mi lista de comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
                 finalBody = menuCategories[input];
             } else {
-                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Las categorías:* \n${Object.keys(menuCategories).map(c => `> ➪ ${c}`).join('\n')}`);
+                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Las categorías disponibles son* »\n${Object.keys(menuCategories).map(c => `> ➪ ${c}`).join('\n')}`);
             }
 
             let textoMenu = `${header}${subHeader}${infoBot}\n${infoUser}\n\n${finalBody}`;
