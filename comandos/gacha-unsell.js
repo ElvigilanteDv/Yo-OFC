@@ -9,33 +9,37 @@ const unsellCommand = {
     name: 'unsell',
     alias: ['cancelarsell', 'cancelpj'],
     category: 'gacha',
+    desc: 'Retira un personaje que hayas puesto en venta en el mercado del grupo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje que deseas retirar del mercado.`);
-            if (!fs.existsSync(shopPath)) return m.reply(`*${config.visuals.emoji2}* El mercado está vacío. Por el cual no hay personajes para retirar.`);
+            
+            if (!fs.existsSync(shopPath)) return m.reply(`*${config.visuals.emoji2}* El mercado está vacío.`);
 
             let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
 
-            if (!shopDB[pjId]) {
-                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no está en la lista de ventas.`);
+            if (!shopDB[group] || !shopDB[group][pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no está en venta en este grupo.`);
             }
 
-            if (shopDB[pjId].seller !== user) {
+            if (shopDB[group][pjId].seller !== user) {
                 return m.reply(`*${config.visuals.emoji2}* No puedes retirar un personaje que no pusiste a la venta tú.`);
             }
 
-            const pjName = shopDB[pjId].name;
+            const pjName = shopDB[group][pjId].name;
 
-            delete shopDB[pjId];
+            delete shopDB[group][pjId];
 
-            if (gachaDB[pjId]) {
-                gachaDB[pjId].status = 'domado';
+            if (gachaDB[group] && gachaDB[group][pjId]) {
+                gachaDB[group][pjId].status = 'domado';
             }
 
             fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
