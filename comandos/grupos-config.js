@@ -7,6 +7,7 @@ const configOnOff = {
     name: 'config',
     alias: ['detect', 'antilink'], 
     category: 'grupo',
+    desc: 'Configura las funciones del grupo. Uso: #detect on/off o #antilink on/off.',
     isAdmin: true,
     isGroup: true,
     noPrefix: true,
@@ -50,7 +51,7 @@ const configOnOff = {
                 db = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
             }
 
-            if (!db[from]) db[from] = { detect: true, antilink: true };
+            if (!db[from]) db[from] = { detect: true, antilink: false };
 
             db[from][feature] = enabled;
 
@@ -58,12 +59,11 @@ const configOnOff = {
 
             const statusText = enabled ? 'Activada' : 'Desactivada';
             await conn.sendMessage(from, { 
-                text: `*✿︎* \`Ajuste de Grupo\` *✿︎*\n\nLa función *${feature.toUpperCase()}* ha sido *${statusText}*.\n\n> ¡No uses esto de manera abusiva!` 
+                text: `*✿︎* \`Ajuste de Grupo\` *✿︎*\n\nLa función *${feature.toUpperCase()}* ha sido *${statusText}*.\n\n> Configuración aplicada exitosamente.` 
             }, { quoted: m });
 
         } catch (err) {
-            console.error('Error en Config:', err);
-            m.reply('❌ Error al guardar en el archivo JSON.');
+            m.reply('❌ Error al guardar la configuración.');
         }
     }
 };
