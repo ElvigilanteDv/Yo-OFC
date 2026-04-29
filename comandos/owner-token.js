@@ -7,15 +7,17 @@ export default {
     name: 'token',
     alias: ['generartoken', 'newtoken'],
     category: 'owner',
+    isOwner: true,
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
-            const sender = m.sender;
-            const isMaster = sender === masterAuth.realOwner || sender === masterAuth.realLid;
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
 
-            if (!isMaster) {
-                return m.reply(`*${config.visuals.emoji2}* Acceso denegado. Solo el Mood principal puede generar tokens.`);
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el desarrollador principal puede generar tokens de vinculación.`);
             }
 
             const token = Math.floor(1000 + Math.random() * 9000).toString();
