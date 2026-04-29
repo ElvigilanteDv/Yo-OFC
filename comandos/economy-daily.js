@@ -8,17 +8,22 @@ const dailyCommand = {
     name: 'daily',
     alias: ['diario', 'recompensa'],
     category: 'economy',
+    desc: 'Reclama tu recompensa diaria de coins y mantén tu racha para obtener bonificaciones mayores.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const now = Date.now();
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[user]) db[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 } };
+            if (!db[group]) db[group] = {};
+            if (!db[group][user]) {
+                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 } };
+            }
             
-            const userData = db[user];
+            const userData = db[group][user];
             const cooldown = 24 * 60 * 60 * 1000;
             const timePassed = now - (userData.daily?.lastClaim || 0);
 
@@ -34,7 +39,8 @@ const dailyCommand = {
 
             userData.wallet += reward;
             userData.daily.lastClaim = now;
-            db[user] = userData;
+            
+            db[group][user] = userData;
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
 
             await conn.sendMessage(m.chat, { 
