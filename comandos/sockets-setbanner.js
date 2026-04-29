@@ -7,6 +7,7 @@ const setBanner = {
     name: 'setbanner',
     alias: ['setimg', 'bannerbot'],
     category: 'sockets',
+    desc: 'Cambia la imagen de banner de tu Socket personal.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -41,7 +42,6 @@ const setBanner = {
 
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
-            
             let userSettingsPath = '';
 
             if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
@@ -49,29 +49,20 @@ const setBanner = {
             } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
                 userSettingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
             } else {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Carpeta de sesión no encontrada en el sistema.` 
-                }, { quoted: m });
+                return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Carpeta de sesión no encontrada.` }, { quoted: m });
             }
 
-            let localConfig = {};
-            if (await fs.pathExists(userSettingsPath)) {
-                localConfig = await fs.readJson(userSettingsPath);
-            }
-
+            let localConfig = (await fs.pathExists(userSettingsPath)) ? await fs.readJson(userSettingsPath) : {};
             localConfig.banner = fullLink;
             localConfig.lastUpdate = Date.now();
 
             await fs.writeJson(userSettingsPath, localConfig, { spaces: 2 });
-
             const socketName = localConfig.shortName || config.botName;
 
-            const successMsg = `*${config.visuals.emoji3} \`BANNER ACTUALIZADO\` ${config.visuals.emoji3}*\n\nSe ha cambiado el banner para el socket *${socketName}*.\n\n*🚀 Enlace:* ${fullLink}\n\n> ¡Ajuste aplicado correctamente!`;
-
-            await conn.sendMessage(from, { text: successMsg }, { quoted: m });
-
+            await conn.sendMessage(from, { 
+                text: `*${config.visuals.emoji3} \`BANNER ACTUALIZADO\` ${config.visuals.emoji3}*\n\nSe ha cambiado el banner para *${socketName}*.\n\n*🚀 Enlace:* ${fullLink}` 
+            }, { quoted: m });
         } catch (e) {
-            console.error(e);
             await conn.sendMessage(m.chat, { text: `*${config.visuals.emoji2}* Error al procesar el banner.` }, { quoted: m });
         }
     }
