@@ -7,6 +7,7 @@ export default {
     name: 'token',
     alias: ['generartoken', 'newtoken'],
     category: 'owner',
+    desc: 'Genera un token de acceso temporal para vincular nuevos SubMoods.',
     isOwner: true,
     noPrefix: true,
 
@@ -14,7 +15,6 @@ export default {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -50,7 +50,6 @@ export default {
             }, masterAuth.tokenExpiry * 60000);
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al generar el token.`);
         }
     }
