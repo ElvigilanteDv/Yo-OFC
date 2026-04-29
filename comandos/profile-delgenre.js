@@ -8,6 +8,7 @@ const delGenre = {
     name: 'delgenre',
     alias: ['borrargenero'],
     category: 'profile',
+    desc: 'Elimina tu género registrado de la base de datos.',
     noPrefix: true,
 
     run: async (conn, m) => {
