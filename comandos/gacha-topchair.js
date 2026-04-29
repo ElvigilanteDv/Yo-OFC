@@ -8,21 +8,29 @@ const topPjsCommand = {
     name: 'topchair',
     alias: ['pjetop', 'topwaifu', 'topersonaje'],
     category: 'gacha',
+    desc: 'Muestra el ranking de los personajes más valiosos dentro de este grupo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: Base de datos no encontrada.`);
+            
             const gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+
+            if (!gachaDB[group]) {
+                return m.reply(`*${config.visuals.emoji2}* No hay registros de personajes en este grupo.`);
+            }
 
             let page = 1;
             if (args[0] && !isNaN(args[0])) {
                 page = parseInt(args[0]);
             }
 
-            let allPjs = Object.keys(gachaDB).map(id => ({
+            let allPjs = Object.keys(gachaDB[group]).map(id => ({
                 id,
-                ...gachaDB[id]
+                ...gachaDB[group][id]
             }));
 
             allPjs.sort((a, b) => b.value - a.value);
