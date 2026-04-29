@@ -6,6 +6,7 @@ const shopCommand = {
     name: 'tienda',
     alias: ['shop', 'market', 'store'],
     category: 'rpg',
+    desc: 'Muestra el catálogo de objetos disponibles para comprar.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -19,41 +20,15 @@ const shopCommand = {
                 if (localData.shortName) displayShortName = localData.shortName;
             }
 
-            const textoTienda = `*${config.visuals.emoji3}* \`TIENDA DE ITEMS - ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*
-
-Bienvenido al mercado oficial. Utiliza tus coins para adquirir ventajas exclusivas en tus aventuras:
-
-🛒 *ARTÍCULOS DISPONIBLES*
-
-1. 🧲 *Imán de Minas*
-   > *Precio:* ¥25,000
-   > *Efecto:* Duplica la obtención de minerales en tu próxima minería.
-
-2. 🍀 *Trébol de la Suerte*
-   > *Precio:* ¥40,000
-   > *Efecto:* Protege tu carnada y elimina penalizaciones en tu próxima pesca.
-
-3. 🛡️ *Escudo de Mazmorra*
-   > *Precio:* ¥35,000
-   > *Efecto:* Reduce el tiempo de espera de la mazmorra a la mitad por un uso.
-
-4. 🧧 *Amuleto del Apostador*
-   > *Precio:* ¥60,000
-   > *Efecto:* Habilita una apuesta especial de hasta ¥30,000 en el duelo de PPT.
-
----
-💡 *Instrucciones:* Para obtener un artículo, utiliza el comando *adquirir* seguido del número o nombre del item.
-
-> Ejemplo: *#adquirir 1* o *#adquirir iman*`;
+            const textoTienda = `*${config.visuals.emoji3}* \`TIENDA - ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n\n🛒 *ARTÍCULOS DISPONIBLES*\n\n1. 🧲 *Imán de Minas* (¥25,000)\n> Duplica recursos en tu próxima minería.\n\n2. 🍀 *Trébol de la Suerte* (¥40,000)\n> Evita fallos en tu próxima pesca.\n\n3. 🛡️ *Escudo de Mazmorra* (¥35,000)\n> Reduce el cooldown de mazmorra al 50%.\n\n4. 🧧 *Amuleto del Apostador* (¥60,000)\n> Sube el límite de apuesta en PPT a ¥30,000.\n\n---
+💡 *Uso:* #adquirir [número/nombre]`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: 'https://upload.yotsuba.giize.com/u/JXwecTzS.jpeg' }, 
                 caption: textoTienda 
             }, { quoted: m });
-
         } catch (e) {
-            console.error(e);
-            m.reply(`*${config.visuals.emoji2}* Hubo un problema al acceder al mercado.`);
+            m.reply('✘ Error al acceder al mercado.');
         }
     }
 };
