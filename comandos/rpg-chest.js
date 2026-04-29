@@ -12,16 +12,17 @@ const chestCommand = {
     name: 'cofre',
     alias: ['chest', 'baul', 'botin'],
     category: 'rpg',
+    desc: 'Busca tesoros marinos para obtener minerales y coins extra.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
             const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
-            
+
             if (!fs.existsSync(invPath)) fs.outputJsonSync(invPath, {});
             let invDb = await fs.readJson(invPath);
-            
+
             const tieneEscudo = invDb[user]?.escudo > 0;
             const cooldown = tieneEscudo ? 5 * 60 * 1000 : 10 * 60 * 1000; 
 
@@ -94,21 +95,7 @@ const chestCommand = {
             await fs.writeJson(rpgDbPath, rpgDb, { spaces: 2 });
             await fs.writeJson(economyDbPath, ecoDb, { spaces: 2 });
 
-            const textoExito = `*${config.visuals.emoji3}* \`COFRE ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*
-${tieneEscudo ? '🛡️ *¡ESCUDO ACTIVADO!* Tiempo de espera reducido.\n' : ''}
-${randomPhrase}
-
-💎 *Diamantes:* ${rewards.diamantes}
-🌹 *Rubíes:* ${rewards.rubies}
-🍃 *Esmeraldas:* ${rewards.esmeraldas}
-🔹 *Zafiros:* ${rewards.zafiros}
-🔮 *Amatistas:* ${rewards.amatistas}
-⚪ *Perlas:* ${rewards.perlas}
-📀 *Oro:* ${rewards.oro}
-
-💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins 
-
-> ¡El mar siempre tiene tesoros para quienes saben buscar!`;
+            const textoExito = `*${config.visuals.emoji3}* \`COFRE ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${tieneEscudo ? '🛡️ *¡ESCUDO ACTIVADO!* Tiempo de espera reducido.\n' : ''}\n${randomPhrase}\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El mar siempre tiene tesoros para quienes saben buscar!`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: 'https://upload.yotsuba.giize.com/u/nwqLhleW.jpeg' }, 
@@ -116,7 +103,6 @@ ${randomPhrase}
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al abrir el cofre.`);
         }
     }
