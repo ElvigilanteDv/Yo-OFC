@@ -8,6 +8,7 @@ const delSession = {
     name: 'delsession',
     alias: ['cerrarsesion', 'out'],
     category: 'sockets',
+    desc: 'Cierra la sesión del socket actual y elimina permanentemente sus datos de conexión del sistema.',
     noPrefix: true,
 
     run: async (conn, m) => {
