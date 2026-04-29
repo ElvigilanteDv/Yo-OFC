@@ -6,6 +6,7 @@ const setBotName = {
     name: 'setname',
     alias: ['setbotname', 'botname', 'nombrebot'],
     category: 'sockets',
+    desc: 'Configura el nombre corto y largo de tu Socket personal.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
@@ -16,44 +17,25 @@ const setBotName = {
             const isOwner = config.owner.includes(m.sender);
 
             if (botNumber !== user && !isOwner) {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su nombre.` 
-                }, { quoted: m });
+                return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su nombre.` }, { quoted: m });
             }
 
             const fullText = args.join(' ');
-            if (!fullText) {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2} \`FALTAN DATOS\` ${config.visuals.emoji2}*\n\nUsa: #setname Corto/Largo Largo Largo` 
-                }, { quoted: m });
-            }
+            if (!fullText) return m.reply(`*${config.visuals.emoji2}* Uso: #setname Corto/Nombre Largo`);
 
             let shortName, longName;
-
             if (fullText.includes('/')) {
                 let [part1, ...part2] = fullText.split('/');
                 shortName = part1.trim();
                 longName = part2.join('/').trim();
-
-                if (shortName.includes(' ')) {
-                    return await conn.sendMessage(from, { 
-                        text: `*${config.visuals.emoji2}* El nombre corto antes de la \`/\` no puede tener espacios.` 
-                    }, { quoted: m });
-                }
+                if (shortName.includes(' ')) return m.reply(`*${config.visuals.emoji2}* El nombre corto no puede tener espacios.`);
             } else {
                 shortName = fullText.trim();
                 longName = fullText.trim();
             }
 
-            if (!shortName || !longName) {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Asegúrate de llenar ambos lados de la barra.` 
-                }, { quoted: m });
-            }
-
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
-            
             let userSettingsPath = '';
 
             if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
@@ -61,31 +43,18 @@ const setBotName = {
             } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
                 userSettingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
             } else {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Carpeta de sesión no encontrada en el sistema.` 
-                }, { quoted: m });
+                return m.reply(`*${config.visuals.emoji2}* Carpeta de sesión no encontrada.`);
             }
 
-            let localConfig = {};
-            if (await fs.pathExists(userSettingsPath)) {
-                localConfig = await fs.readJson(userSettingsPath);
-            }
-
+            let localConfig = (await fs.pathExists(userSettingsPath)) ? await fs.readJson(userSettingsPath) : {};
             localConfig.shortName = shortName;
             localConfig.longName = longName;
             localConfig.lastUpdate = Date.now();
 
             await fs.writeJson(userSettingsPath, localConfig, { spaces: 2 });
-
-            const successMsg = `*${config.visuals.emoji3} \`CONFIGURACIÓN LOCAL\` ${config.visuals.emoji3}*\n\nNombres guardados correctamente.\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado al socket actual.`;
-
-            await conn.sendMessage(from, { text: successMsg }, { quoted: m });
-
+            await m.reply(`*${config.visuals.emoji3} \`CONFIGURACIÓN LOCAL\` ${config.visuals.emoji3}*\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado correctamente.`);
         } catch (e) {
-            console.error(e);
-            await conn.sendMessage(m.chat, { 
-                text: `*${config.visuals.emoji2}* Error al guardar el nombre.` 
-            }, { quoted: m });
+            await m.reply(`*${config.visuals.emoji2}* Error al guardar el nombre.`);
         }
     }
 };
