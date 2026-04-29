@@ -6,6 +6,7 @@ export default {
     name: 'sockets',
     alias: ['sockets', 'bots', 'lista'],
     category: 'sockets',
+    desc: 'Escanea y muestra los Moods y SubBots del sistema presentes en el grupo actual.',
     noPrefix: true,
     isGroup: true,
 
@@ -121,9 +122,7 @@ export default {
 
             const header = `*${config.visuals.emoji3}* \`LISTA DE SOCKETS ACTIVOS\` *${config.visuals.emoji3}*`;
             const totalLocal = localMoods + localSubs;
-
             const stats = `\n\n❁ Moods » *${globalMoods}*\n❀ Subs » *${globalSubs}*\n\n❀ En este grupo *(${totalLocal})*:`;
-
             const textoFinal = `${header}${stats}\n${mainBotLine}${moodBotsList}${subBotsList}\n> ¡Sistemas operativos y estables en esta comunidad!`;
 
             if (totalLocal === 0) {
@@ -136,7 +135,6 @@ export default {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al filtrar los sockets.`);
         }
     }
