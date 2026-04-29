@@ -8,6 +8,7 @@ const deleteMood = {
     name: 'delmood',
     alias: ['purgemood', 'deletemood'],
     category: 'owner',
+    desc: 'Elimina sesiones específicas o totales de los SubMoods instalados.',
     isOwner: true,
     noPrefix: true,
 
@@ -15,7 +16,6 @@ const deleteMood = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -69,7 +69,6 @@ const deleteMood = {
             await m.reply(`*${config.visuals.emoji3}* La sesión Mood del número \`${target}\` ha sido eliminada del sistema.`);
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al procesar la eliminación del Mood.`);
         }
     }
