@@ -9,6 +9,7 @@ const delPrimary = {
     name: 'delprimary',
     alias: ['delprimary', 'removerprincipal', 'todoshablen'],
     category: 'sockets',
+    desc: 'Elimina la restricción de bot primario para que todos los sockets puedan responder en el grupo.',
     isOwner: false,
     noPrefix: true,
     isAdmin: true,
