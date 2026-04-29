@@ -10,10 +10,13 @@ const buyCommand = {
     name: 'buy',
     alias: ['obtener'],
     category: 'gacha',
+    desc: 'Compra personajes puestos en venta por otros usuarios del grupo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const buyer = m.sender.split('@')[0].split(':')[0];
             const pjId = args[0];
 
@@ -24,26 +27,33 @@ const buyCommand = {
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
             let ecoDB = JSON.parse(fs.readFileSync(ecoPath, 'utf-8'));
 
-            if (!shopDB[pjId]) return m.reply(`*${config.visuals.emoji2}* Ese personaje no está en venta.`);
+            if (!shopDB[group] || !shopDB[group][pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* Ese personaje no está en venta en este grupo.`);
+            }
 
-            const item = shopDB[pjId];
+            const item = shopDB[group][pjId];
             const seller = item.seller;
             const price = item.salePrice;
 
             if (buyer === seller) return m.reply(`*${config.visuals.emoji2}* No puedes comprar tu propio personaje.`);
-            if (!ecoDB[buyer] || (ecoDB[buyer].wallet || 0) < price) {
+
+            if (!ecoDB[group] || !ecoDB[group][buyer] || (ecoDB[group][buyer].wallet || 0) < price) {
                 return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en tu cartera (¥${price.toLocaleString()}).`);
             }
 
-            if (!ecoDB[seller]) ecoDB[seller] = { wallet: 0, bank: 0 };
+            if (!ecoDB[group][seller]) {
+                ecoDB[group][seller] = { wallet: 0, bank: 0 };
+            }
 
-            ecoDB[buyer].wallet -= price;
-            ecoDB[seller].wallet += price;
+            ecoDB[group][buyer].wallet -= price;
+            ecoDB[group][seller].wallet += price;
 
-            gachaDB[pjId].owner = buyer;
-            gachaDB[pjId].status = 'domado';
+            if (gachaDB[group] && gachaDB[group][pjId]) {
+                gachaDB[group][pjId].owner = buyer;
+                gachaDB[group][pjId].status = 'domado';
+            }
 
-            delete shopDB[pjId];
+            delete shopDB[group][pjId];
 
             fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
             fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
