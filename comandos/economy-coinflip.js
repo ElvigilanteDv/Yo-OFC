@@ -9,10 +9,12 @@ const flipCommand = {
     name: 'coinflip',
     alias: ['flip', 'suerte'],
     category: 'economy',
+    desc: 'Apuesta ¥1,000 en un cara o cruz para intentar duplicar tu inversión.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const choice = args[0]?.toLowerCase();
 
@@ -23,11 +25,14 @@ const flipCommand = {
             if (!fs.existsSync(dbPath)) return m.reply('Error: DB no encontrada.');
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[user]) {
-                db[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            // Inicializar estructura de grupo y usuario
+            if (!db[group]) db[group] = {};
+            if (!db[group][user]) {
+                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
             }
 
-            const totalMoney = (Number(db[user].wallet) || 0) + (Number(db[user].bank) || 0);
+            const userData = db[group][user];
+            const totalMoney = (Number(userData.wallet) || 0) + (Number(userData.bank) || 0);
 
             if (totalMoney < 5000) {
                 return m.reply(`*${config.visuals.emoji2}* \`POCO CAPITAL\`\n\nNecesitas al menos ¥5,000 en total para apostar.`);
@@ -39,17 +44,17 @@ const flipCommand = {
             const result = win ? choice : (choice === 'cara' ? 'cruz' : 'cara');
 
             if (win) {
-                db[user].wallet = (Number(db[user].wallet) || 0) + bet;
+                userData.wallet = (Number(userData.wallet) || 0) + bet;
                 const frase = flipFrases.win[Math.floor(Math.random() * flipFrases.win.length)];
                 
                 await conn.sendMessage(m.chat, { 
-                    text: `*${config.visuals.emoji3}* \`¡GANASTE!\` *${config.visuals.emoji2}*\n\nSalió: *${result.toUpperCase()}*\n${frase}\n\n> *Cartera:* ¥${db[user].wallet.toLocaleString()}`
+                    text: `*${config.visuals.emoji3}* \`¡GANASTE!\` *${config.visuals.emoji2}*\n\nSalió: *${result.toUpperCase()}*\n${frase}\n\n> *Cartera:* ¥${userData.wallet.toLocaleString()}`
                 }, { quoted: m });
             } else {
-                if (db[user].wallet >= bet) {
-                    db[user].wallet -= bet;
+                if (userData.wallet >= bet) {
+                    userData.wallet -= bet;
                 } else {
-                    db[user].bank = (Number(db[user].bank) || 0) - bet;
+                    userData.bank = (Number(userData.bank) || 0) - bet;
                 }
                 
                 const frase = flipFrases.lose[Math.floor(Math.random() * flipFrases.lose.length)];
