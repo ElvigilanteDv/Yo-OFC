@@ -6,6 +6,7 @@ const resetCommand = {
     name: 'borrar',
     alias: ['resetdb', 'clearout'],
     category: 'owner',
+    desc: 'Resetea un archivo JSON de la base de datos a sus valores iniciales.',
     isOwner: true,
     noPrefix: true,
 
@@ -13,7 +14,6 @@ const resetCommand = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -72,7 +72,6 @@ const resetCommand = {
             await conn.sendMessage(realOwnerNumber + '@s.whatsapp.net', { text: successMsg });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error crítico al intentar resetear.`);
         }
     }
