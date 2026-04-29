@@ -8,6 +8,7 @@ const setBirth = {
     name: 'setbirth',
     alias: ['cumpleaños'],
     category: 'profile',
+    desc: 'Registra tu fecha de nacimiento (DD/MM/AAAA) para calcular tu edad y cumpleaños.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
@@ -27,7 +28,7 @@ const setBirth = {
             const year = parseInt(match[3]);
             const age = 2026 - year;
 
-            if (age < 8 || age > 85) return m.reply(`*${config.visuals.emoji2} \`RANGO INVÁLIDO\` ${config.visuals.emoji2}*\n\nSolo de 8 a 85 años.\n\n> ¡Fuera de los límites biológicos!`);
+            if (age < 8 || age > 85) return m.reply(`*${config.visuals.emoji2} \`RANGO INVÁLIDO\` ${config.visuals.emoji2}*\n\nSolo de 8 a 85 años.`);
 
             db[user] = { birth: `${day}/${month}/${year}`, age: age };
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
