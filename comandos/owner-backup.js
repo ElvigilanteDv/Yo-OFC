@@ -4,8 +4,9 @@ import path from 'path';
 
 const backupCommand = {
     name: 'backup',
-    alias: ['test', 'getdb'],
+    alias: ['getdb', 'respaldo'],
     category: 'owner',
+    desc: 'Envía un respaldo de un archivo JSON de la base de datos.',
     isOwner: true,
     noPrefix: true,
 
@@ -27,7 +28,6 @@ const backupCommand = {
             }
 
             file = file.replace(/\.json$/i, '');
-
             const dbPath = path.resolve(`./config/database/${folder}/${file}.json`);
 
             if (!fs.existsSync(dbPath)) {
@@ -49,7 +49,6 @@ const backupCommand = {
             }
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2} \`ERROR CRÍTICO\` ${config.visuals.emoji2}*`);
         }
     }
