@@ -4,6 +4,7 @@ const totalCommands = {
     name: 'totalcommands',
     alias: ['commands', 'total', 'cmdtotal'],
     category: 'owner',
+    desc: 'Muestra la cantidad total de comandos cargados actualmente en el sistema.',
     isOwner: true,
     noPrefix: true,
 
@@ -11,7 +12,6 @@ const totalCommands = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -28,7 +28,6 @@ const totalCommands = {
 
             await conn.sendMessage(m.chat, { text: txt }, { quoted: m });
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al contabilizar los comandos.`);
         }
     }
