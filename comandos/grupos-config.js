@@ -53,13 +53,17 @@ const configOnOff = {
 
             if (!db[from]) db[from] = { detect: true, antilink: false };
 
+            if (db[from][feature] === enabled) {
+                return m.reply(`*✿︎* \`Aviso\` *✿︎*\n\nLa función *${feature.toUpperCase()}* ya estaba *${enabled ? 'activada' : 'desactivada'}*.`);
+            }
+
             db[from][feature] = enabled;
 
             fs.writeFileSync(databasePath, JSON.stringify(db, null, 2));
 
             const statusText = enabled ? 'Activada' : 'Desactivada';
             await conn.sendMessage(from, { 
-                text: `*✿︎* \`Ajuste de Grupo\` *✿︎*\n\nLa función *${feature.toUpperCase()}* ha sido *${statusText}*.\n\n> Configuración aplicada exitosamente.` 
+                text: `*✿︎* \`Ajuste de Grupo\` *✿︎*\n\nLa función *${feature.toUpperCase()}* ha sido *${statusText}* exitosamente.` 
             }, { quoted: m });
 
         } catch (err) {
