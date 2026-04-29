@@ -10,6 +10,7 @@ const marry = {
     name: 'marry',
     alias: ['casar', 'acceptmarry'],
     category: 'profile',
+    desc: 'Propón matrimonio a otro usuario o acepta una propuesta respondiendo al mensaje.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
