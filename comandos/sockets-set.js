@@ -6,6 +6,7 @@ const setMenu = {
     name: 'set',
     alias: ['configbot', 'settingsbot', 'ajustesbot'],
     category: 'sockets',
+    desc: 'Muestra el menú de personalización para dueños de Sockets.',
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix) => {
@@ -22,7 +23,6 @@ const setMenu = {
             }
 
             const prefix = usedPrefix || '#';
-
             const textoSettings = `*${config.visuals.emoji3}* \`CONFIGURACIÓN DE SOCKET\` *${config.visuals.emoji3}*
 
 Hola, aquí puedes personalizar la apariencia de tu socket en el sistema.
@@ -45,7 +45,6 @@ Hola, aquí puedes personalizar la apariencia de tu socket en el sistema.
 > *${config.visuals.emoji2}* \`KAZUMA SOCKET SYSTEM\``.trim();
 
             await conn.sendMessage(from, { text: textoSettings }, { quoted: m });
-
         } catch (e) {
             console.error(e);
         }
