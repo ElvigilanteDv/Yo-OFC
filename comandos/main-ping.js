@@ -6,10 +6,8 @@ const pingCommand = {
     name: 'ping',
     alias: ['p', 'speed', 'latencia'],
     category: 'main',
-    isOwner: false,
+    desc: 'Muestra la velocidad de respuesta del bot y su estado actual.',
     noPrefix: true,
-    isAdmin: false,
-    isGroup: false,
 
     run: async (conn, m) => {
         try {
