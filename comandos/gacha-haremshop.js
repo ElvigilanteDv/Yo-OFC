@@ -8,16 +8,22 @@ const haremShop = {
     name: 'haremshop',
     alias: ['gachashop', 'tienda'],
     category: 'gacha',
+    desc: 'Explora el mercado local del grupo para ver qué personajes han puesto en venta otros usuarios.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             if (!fs.existsSync(shopPath)) return m.reply(`*${config.visuals.emoji2}* No hay personajes en venta.`);
 
             let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-            let items = Object.values(shopDB);
+            
+            if (!shopDB[group] || Object.keys(shopDB[group]).length === 0) {
+                return m.reply(`*${config.visuals.emoji2}* El mercado de este grupo está vacío.`);
+            }
 
-            if (items.length === 0) return m.reply(`*${config.visuals.emoji2}* El mercado está vacío.`);
+            let items = Object.values(shopDB[group]);
 
             let page = args[0] ? parseInt(args[0]) : 1;
             if (isNaN(page) || page < 1) page = 1;
@@ -39,7 +45,7 @@ const haremShop = {
                 txt += `  ᗒ *Precio:* ¥${item.salePrice.toLocaleString()}\n\n`;
             });
 
-            txt += `> ¡Para comprar personajes, usa el comando  #buy (ID)!`;
+            txt += `\n> Usa el comando *#buy (ID)* para comprar un personaje.`;
 
             await conn.sendMessage(m.chat, { 
                 text: txt, 
