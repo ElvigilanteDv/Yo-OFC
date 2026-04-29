@@ -11,6 +11,14 @@ const backupCommand = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nNo tienes permisos para extraer copias de seguridad del servidor.`);
+            }
+
             const folder = args[0];
             let file = args[1];
 
@@ -18,13 +26,12 @@ const backupCommand = {
                 return m.reply(`*${config.visuals.emoji2} \`PARÁMETROS INCOMPLETOS\` ${config.visuals.emoji2}*\n\nDebes especificar la carpeta y el archivo.\n\n> Ejemplo: #backup economy economy`);
             }
 
-            // Esto limpia el nombre si escribes "archivo.json", dejando solo "archivo"
             file = file.replace(/\.json$/i, '');
 
             const dbPath = path.resolve(`./config/database/${folder}/${file}.json`);
 
             if (!fs.existsSync(dbPath)) {
-                return m.reply(`*${config.visuals.emoji2} \`ARCHIVO NO ENCONTRADO\` ${config.visuals.emoji2}*\n\nLa ruta \`config/database/${folder}/${file}.json\` no existe.\n\n> ¡Verifica el nombre y la carpeta!`);
+                return m.reply(`*${config.visuals.emoji2} \`ARCHIVO NO ENCONTRADO\` ${config.visuals.emoji2}*\n\nLa ruta \`config/database/${folder}/${file}.json\` no existe.`);
             }
 
             const dbContent = fs.readFileSync(dbPath, 'utf-8');
