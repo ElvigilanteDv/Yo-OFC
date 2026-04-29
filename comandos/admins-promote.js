@@ -4,6 +4,7 @@ const promoteCommand = {
     name: 'promote',
     alias: ['daradmin', 'promover'],
     category: 'admins',
+    desc: 'Otorga privilegios de administrador a un usuario mencionado o respondido.',
     isAdmin: true,
     noPrefix: true,
 
