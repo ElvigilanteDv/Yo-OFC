@@ -8,10 +8,12 @@ const payCommand = {
     name: 'pay',
     alias: ['pagar', 'transferir', 'dar'],
     category: 'economy',
+    desc: 'Transfiere una cantidad de dinero de tu banco al banco de otro usuario mediante una respuesta.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const sender = m.sender.split('@')[0].split(':')[0];
             let quotedJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : null;
 
@@ -38,19 +40,21 @@ const payCommand = {
             if (!fs.existsSync(dbPath)) return m.reply('Error: DB no encontrada.');
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-            if (!db[sender]) db[sender] = { wallet: 0, bank: 0 };
-            let senderBank = Number(db[sender].bank || 0);
+            if (!db[group]) db[group] = {};
+            if (!db[group][sender]) db[group][sender] = { wallet: 0, bank: 0 };
+            
+            let senderBank = Number(db[group][sender].bank || 0);
 
             if (senderBank < amount) {
                 return m.reply(`*${config.visuals.emoji2}* \`Fondos Insuficientes\`\n\nTienes ¥${senderBank.toLocaleString()} en tu banco.`);
             }
 
-            if (!db[receiver]) {
-                db[receiver] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            if (!db[group][receiver]) {
+                db[group][receiver] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
             }
 
-            db[sender].bank = senderBank - amount;
-            db[receiver].bank = Number(db[receiver].bank || 0) + amount;
+            db[group][sender].bank = senderBank - amount;
+            db[group][receiver].bank = Number(db[group][receiver].bank || 0) + amount;
 
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
 
@@ -60,7 +64,6 @@ const payCommand = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en el sistema.`);
         }
     }
