@@ -11,10 +11,11 @@ const totalCommands = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+            
+            const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
-                return m.reply(`*${config.visuals.emoji2}* \`ACCESO RESTRINGIDO\`\n\nEsta información técnica solo es accesible para el desarrollador principal.`);
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` *${config.visuals.emoji2}*\n\nSolo el administrador principal tiene autoridad sobre este comando.`);
             }
 
             const total = global.commands.size;
