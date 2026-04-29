@@ -11,6 +11,7 @@ const dungeonCommand = {
     name: 'mazmorra',
     alias: ['dungeon', 'explorar'],
     category: 'rpg',
+    desc: 'Explora las profundidades para obtener materiales raros y tesoros.',
     noPrefix: true,
 
     run: async (conn, m) => {
@@ -82,18 +83,7 @@ const dungeonCommand = {
             await fs.writeJson(rpgDbPath, rpgDb, { spaces: 2 });
             await fs.writeJson(economyDbPath, ecoDb, { spaces: 2 });
 
-            const textoExito = `*${config.visuals.emoji3}* \`MAZMORRA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*
-
-¡Has sobrevivido a las profundidades de la mazmorra! Botín obtenido:
-
-⛓️ *Hierro:* ${rewards.hierro}
-🏮 *Obsidiana:* ${rewards.obsidiana}
-🦴 *Huesos:* ${rewards.huesos}
-📜 *Pergaminos:* ${rewards.pergaminos}
-
-💰 *Tesoro hallado:* ¥${rewards.coins.toLocaleString()} coins 
-
-> ¡El peligro aumenta, pero las recompensas también!`;
+            const textoExito = `*${config.visuals.emoji3}* \`MAZMORRA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n\n¡Has sobrevivido a las profundidades de la mazmorra! Botín obtenido:\n\n⛓️ *Hierro:* ${rewards.hierro}\n🏮 *Obsidiana:* ${rewards.obsidiana}\n🦴 *Huesos:* ${rewards.huesos}\n📜 *Pergaminos:* ${rewards.pergaminos}\n\n💰 *Tesoro hallado:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El peligro aumenta, pero las recompensas también!`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: 'https://upload.yotsuba.giize.com/u/9WjNxRhX.jpeg' }, 
@@ -101,7 +91,6 @@ const dungeonCommand = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en la mazmorra.`);
         }
     }
