@@ -8,6 +8,7 @@ const setAge = {
     name: 'setage',
     alias: ['edad'],
     category: 'profile',
+    desc: 'Registra tu edad actual en tu perfil (Rango: 8 - 85 años).',
     noPrefix: true,
 
     run: async (conn, m, args) => {
