@@ -1,5 +1,4 @@
 import { config } from '../config.js';
-import { menuCategories } from '../config/menu.js';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -22,17 +21,16 @@ const menuCommand = {
 
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
-            
+
             let settingsPath = '';
             let currentBotType = 'Mood';
 
+            // Detectar tipo de bot y cargar configuración visual personalizada
             if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
                 settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
                 currentBotType = 'SubBot';
             } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
                 settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-                currentBotType = 'Mood';
-            } else {
                 currentBotType = 'Mood';
             }
 
@@ -45,14 +43,31 @@ const menuCommand = {
                 if (localData.banner) displayBanner = localData.banner;
             }
 
+            // Datos de economía/RPG
             const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
             const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
-
             const wallet = ecoDB[user]?.wallet || 0;
             const userRpg = rpgDB[group]?.[user] || {};
             const rank = userRpg.rank || 'Novato de las Cuevas';
             const diamantes = userRpg.minerals?.diamantes || 0;
 
+            // --- LÓGICA DE CARGA INTELIGENTE DE COMANDOS ---
+            const allCommands = Array.from(global.commands.values());
+            const categories = {};
+
+            allCommands.forEach(cmd => {
+                const cat = cmd.category ? cmd.category.toLowerCase() : 'otros';
+                if (!categories[cat]) categories[cat] = [];
+                // Evitar duplicados por alias
+                if (!categories[cat].some(c => c.name === cmd.name)) {
+                    categories[cat].push({
+                        name: cmd.name,
+                        alias: cmd.alias || []
+                    });
+                }
+            });
+
+            // Secciones fijas del diseño
             const infoBot = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐁𝐎𝐓 ✿︎━━━━╮
 ┃ ✐ *Owner* »
 ┃ kazuma.giize.com/Dev-FelixOfc
@@ -72,22 +87,43 @@ const menuCommand = {
 ╰━━━━━━━━━━━━━━━━━━━╯`;
 
             let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
-            let subHeader = "";
             let finalBody = "";
 
             const input = args[0]?.toLowerCase();
-            if (!input) {
-                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos completa ☜︎︎︎*\n\n`;
-                finalBody = Object.values(menuCategories).join('\n\n');
-            } else if (menuCategories[input]) {
-                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
-                finalBody = menuCategories[input];
-            } else {
-                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Las categorías disponibles son* »\n${Object.keys(menuCategories).map(c => `> ➪ ${c}`).join('\n')}`);
+
+            // Si el usuario pide una categoría específica o el menú general
+            const catToDisplay = input && categories[input] ? [input] : Object.keys(categories).sort();
+
+            if (input && !categories[input]) {
+                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Categorías disponibles:* \n${Object.keys(categories).map(c => `> ➪ ${c}`).join('\n')}`);
             }
 
-            let textoMenu = `${header}${subHeader}${infoBot}\n${infoUser}\n\n${finalBody}`;
-            textoMenu = textoMenu.replace(/\${prefix}/g, prefix);
+            // Construcción dinámica del cuerpo del menú respetando tu diseño
+            for (const cat of catToDisplay) {
+                // Títulos personalizados por categoría (puedes añadir más aquí)
+                const titles = {
+                    main: "MAIN",
+                    economy: "ECONOMY",
+                    sockets: "SOCKETS",
+                    gacha: "GACHA",
+                    perfil: "PERFIL",
+                    gestion: "GESTIÓN",
+                    admins: "ADMINS",
+                    descargas: "DESCARGAS",
+                    tools: "TOOLS",
+                    owner: "OWNER"
+                };
+
+                finalBody += `*» (❍ᴥ❍ʋ) \`${titles[cat] || cat.toUpperCase()}\` «*\n`;
+                
+                categories[cat].forEach(cmd => {
+                    const aliases = cmd.alias.length > 0 ? ` • ${prefix}${cmd.alias.join(` • ${prefix}`)}` : '';
+                    finalBody += `*✿︎ ${prefix}${cmd.name}${aliases}*\n`;
+                });
+                finalBody += `\n`;
+            }
+
+            let textoMenu = `${header}${infoBot}\n${infoUser}\n\n${finalBody}`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: displayBanner }, 
