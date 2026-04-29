@@ -5,38 +5,6 @@ import path from 'path';
 const ecoPath = path.resolve('./config/database/economy/economy.json');
 const rpgPath = path.resolve('./config/database/rpg/rpg.json');
 
-// --- DICCIONARIO DE DESCRIPCIONES (Tu contenido original) ---
-const descriptions = {
-    "menu": "Solicita la lista de comandos.",
-    "ping": "Calcular la latencia del bot.",
-    "status": "Mirar información detallada del bot.",
-    "daily": "Reclama tu recompensa diaria de coins.",
-    "work": "Trabaja duro para obtener un salario.",
-    "slut": "Arriésgate en el escenario para ganar dinero.",
-    "crime": "Comete actos ilícitos para obtener grandes sumas.",
-    "baltop": "Mira el ranking global de los usuarios más ricos.",
-    "deposit": "Asegura tus coins enviándolas al banco.",
-    "pay": "Envía dinero de tu banco a otros usuarios.",
-    "coinflip": "Apuesta ¥1,000 en un cara o cruz.",
-    "economy": "Consulta tus balances y tiempos de espera.",
-    "code": "Hazte SubBot de Kazuma.",
-    "bots": "Mira la lista de sockets activos.",
-    "delsession": "Elimina tu sesión de subbot.",
-    "rw": "Lanza un dado para encontrar un personaje aleatorio.",
-    "claim": "Reclama y compra al personaje que acaba de salir.",
-    "harem": "Mira tu colección de personajes con sus IDs.",
-    "sell": "Pon un personaje en venta (Valor + ¥1,000 mín).",
-    "haremshop": "Mira el catálogo de personajes en venta por otros usuarios.",
-    "buy": "Adquiere un personaje del mercado de usuarios.",
-    "trade": "Intercambia personajes con otros usuarios.",
-    "profile": "Visualiza tu estado, economía y pareja.",
-    "marry": "Inicia un pacto matrimonial o disuelve tu vínculo.",
-    "update": "Actualiza el servidor via Git.",
-    "backup": "El bot envía el contenido actual de la base de datos pedida.",
-    "deletesession": "Elimina todas las sesiones de subbots o una sola."
-    // Agrega aquí las descripciones de los comandos que falten
-};
-
 const menuCommand = {
     name: 'menu',
     alias: ['help', 'menú', 'ayuda'],
@@ -48,63 +16,75 @@ const menuCommand = {
         try {
             const prefix = usedPrefix || '#'; 
             const user = m.sender.split('@')[0].split(':')[0];
+            const group = m.chat;
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
 
-            // Configuración visual (Banner y Nombre)
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+
+            let settingsPath = '';
+            let currentBotType = 'Mood';
+
+            if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
+                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
+                currentBotType = 'SubBot';
+            } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
+                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+                currentBotType = 'Mood';
+            }
+
             let displayLongName = config.botName;
             let displayBanner = config.visuals.img1;
-            // ... (lógica de detección de SubBot/Mood que ya tienes arriba se mantiene igual)
 
-            // Carga de comandos en memoria
-            const allCommands = Array.from(global.commands.values());
-            const categories = {};
+            if (settingsPath && await fs.pathExists(settingsPath)) {
+                const localData = await fs.readJson(settingsPath);
+                if (localData.longName) displayLongName = localData.longName;
+                if (localData.banner) displayBanner = localData.banner;
+            }
 
-            allCommands.forEach(cmd => {
-                const cat = cmd.category ? cmd.category.toLowerCase() : 'otros';
-                if (!categories[cat]) categories[cat] = [];
-                if (!categories[cat].some(c => c.name === cmd.name)) {
-                    categories[cat].push({
-                        name: cmd.name,
-                        alias: cmd.alias || [],
-                        desc: descriptions[cmd.name] || "Comando sin descripción configurada."
-                    });
-                }
-            });
+            const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
+            const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
 
-            // Estructura de diseño
+            const wallet = ecoDB[user]?.wallet || 0;
+            const userRpg = rpgDB[group]?.[user] || {};
+            const rank = userRpg.rank || 'Novato de las Cuevas';
+            const diamantes = userRpg.minerals?.diamantes || 0;
+
             const infoBot = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐁𝐎𝐓 ✿︎━━━━╮
-┃ ✐ *Owner* » kazuma.giize.com/Dev-FelixOfc
-┃ ✐ *Commands* » kazuma.giize.com/commands
-┃ ✐ *Official channel* » https://whatsapp.com/channel/0029Vb6sgWdJkK73qeLU0J0N
+┃ ✐ *Owner* »
+┃ kazuma.giize.com/Dev-FelixOfc
+┃ ✐ *Commands* »
+┃ kazuma.giize.com/commands
+┃ ✐ *Upload* »
+┃ upload.yotsuba.giize.com
+┃ ✐ *Official channel* »
+┃ https://whatsapp.com/channel/0029Vb6sgWdJkK73qeLU0J0N
 ╰━━━━━━━━━━━━━━━━━━━╯\n`;
 
             const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄𝐑 ✿︎━━━━╮
 ┃ ✐ *Usuario* »  @${user}
-┃ ✐ *Coins* » ¥${(ecoDB[user]?.wallet || 0).toLocaleString()}
+┃ ✐ *Rango* » ${rank}
+┃ ✐ *Coins* » ¥${wallet.toLocaleString()}
+┃ ✐ *Diamantes* » ${diamantes}
 ╰━━━━━━━━━━━━━━━━━━━╯`;
 
+            let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
+            let subHeader = "";
             let finalBody = "";
+
             const input = args[0]?.toLowerCase();
-            const catToDisplay = input && categories[input] ? [input] : Object.keys(categories).sort();
-
-            for (const cat of catToDisplay) {
-                const categoryTitles = {
-                    main: "MAIN", economy: "ECONOMY", sockets: "SOCKETS", 
-                    gacha: "GACHA", perfil: "PERFIL", owner: "OWNER"
-                };
-
-                finalBody += `*» (❍ᴥ❍ʋ) \`${categoryTitles[cat] || cat.toUpperCase()}\` «*\n`;
-                finalBody += `> ꕥ Sección de comandos para ${cat}.\n\n`;
-                
-                categories[cat].forEach(cmd => {
-                    const aliases = cmd.alias.length > 0 ? ` • ${prefix}${cmd.alias.join(` • ${prefix}`)}` : '';
-                    finalBody += `*✿︎ ${prefix}${cmd.name}${aliases}*\n`;
-                    finalBody += `> ❀ ${cmd.desc}\n`; // AQUÍ SE CARGA TU DESCRIPCIÓN
-                });
-                finalBody += `\n`;
+            if (!input) {
+                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos completa ☜︎︎︎*\n\n`;
+                finalBody = Object.values(menuCategories).join('\n\n');
+            } else if (menuCategories[input]) {
+                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
+                finalBody = menuCategories[input];
+            } else {
+                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Las categorías:* \n${Object.keys(menuCategories).map(c => `> ➪ ${c}`).join('\n')}`);
             }
 
-            let textoMenu = `¡Hola! Soy ${displayLongName}.\n\n${infoBot}\n${infoUser}\n\n${finalBody}`;
+            let textoMenu = `${header}${subHeader}${infoBot}\n${infoUser}\n\n${finalBody}`;
+            textoMenu = textoMenu.replace(/\${prefix}/g, prefix);
 
             await conn.sendMessage(m.chat, { 
                 image: { url: displayBanner }, 
@@ -113,7 +93,7 @@ const menuCommand = {
             }, { quoted: m });
 
         } catch (err) {
-            console.error(err);
+            console.error('Error en el menú:', err);
         }
     }
 };
