@@ -6,7 +6,8 @@ import Jimp from 'jimp';
 const bratCommand = {
     name: 'brat',
     alias: ['sbrat', 'stickerbrat'],
-    category: 'tools',
+    category: 'stickers',
+    desc: 'Convierte texto en un sticker con estilo minimalista (Brat).',
     isGroup: false,
     noPrefix: true,
 
