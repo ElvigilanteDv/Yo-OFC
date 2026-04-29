@@ -8,15 +8,14 @@ const addCoins = {
     name: 'addcoins',
     alias: ['darcoins', 'regalarcoins', 'givemoney'],
     category: 'owner',
+    desc: 'Suma monedas directamente al banco de un usuario mencionado.',
     isOwner: true,
     noPrefix: true,
-    isGroup: false,
 
     run: async (conn, m, args) => {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -63,7 +62,6 @@ const addCoins = {
             }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error interno.`);
         }
     }
