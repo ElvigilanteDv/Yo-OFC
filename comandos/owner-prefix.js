@@ -9,6 +9,7 @@ const prefixCommand = {
     name: 'setprefix',
     alias: ['prefix', 'prefijo'],
     category: 'owner',
+    desc: 'Establece un prefijo único para que el bot responda globalmente.',
     isOwner: true,
     noPrefix: true,
 
@@ -16,7 +17,6 @@ const prefixCommand = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
@@ -43,7 +43,6 @@ const prefixCommand = {
             await m.reply(`*${config.visuals.emoji3}* \`PREFIJO ESTABLECIDO\`\n\nAhora solo responderé a: \`${newPrefix}\``);
 
         } catch (e) {
-            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al configurar.`);
         }
     }
