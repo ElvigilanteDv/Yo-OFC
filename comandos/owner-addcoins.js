@@ -20,7 +20,7 @@ const addCoins = {
             const isRealOwner = senderNumber === realOwnerNumber;
 
             if (!isRealOwner) {
-                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` ${config.visuals.emoji2}*\n\nSolo el administrador principal tiene autoridad sobre este comando.`);
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` *${config.visuals.emoji2}*\n\nSolo el administrador principal tiene autoridad sobre este comando.`);
             }
 
             let targetJid = null;
