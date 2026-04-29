@@ -7,7 +7,7 @@ const configOnOff = {
     name: 'config',
     alias: ['detect', 'antilink'], 
     category: 'grupo',
-    desc: 'Configura las funciones del grupo. Uso: #detect on/off o #antilink on/off.',
+    desc: 'Configura las funciones del grupo con on/off.',
     isAdmin: true,
     isGroup: true,
     noPrefix: true,
