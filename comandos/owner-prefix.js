@@ -14,6 +14,14 @@ const prefixCommand = {
 
     run: async (conn, m, args) => {
         try {
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+            if (!isRealOwner) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nSolo el desarrollador principal puede alterar el prefijo del sistema.`);
+            }
+
             if (fs.existsSync(prefixPath)) {
                 const current = JSON.parse(fs.readFileSync(prefixPath, 'utf-8'));
                 if (current.selected) {
@@ -34,6 +42,7 @@ const prefixCommand = {
             await m.reply(`*${config.visuals.emoji3}* \`PREFIJO ESTABLECIDO\`\n\nAhora solo responderé a: \`${newPrefix}\``);
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al configurar.`);
         }
     }
