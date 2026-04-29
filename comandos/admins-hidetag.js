@@ -6,6 +6,7 @@ const hidetagCommand = {
     name: 'hidetag',
     alias: ['tag', 'mencion', 'notificar'],
     category: 'admins',
+    desc: 'Menciona a todos los miembros del grupo de forma invisible con un mensaje o archivo multimedia.',
     isAdmin: true,
     isGroup: true,
     noPrefix: true,
@@ -28,7 +29,6 @@ const hidetagCommand = {
                     let options = { mentions: participants };
 
                     if (/sticker/.test(mime)) {
-                        // Forzamos la conversión a sticker real con metadatos
                         const dynamic = await getDynamicConfig(conn);
                         const userName = m.pushName || 'User';
                         const pack = dynamic.stickers.packname;
