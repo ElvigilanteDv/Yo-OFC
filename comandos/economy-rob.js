@@ -9,10 +9,12 @@ const robCommand = {
     name: 'rob',
     alias: ['robar', 'robe'],
     category: 'economy',
+    desc: 'Intenta sustraer una parte del dinero de la cartera de otro usuario inactivo.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             const thief = m.sender.split('@')[0];
 
             let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
@@ -27,8 +29,9 @@ const robCommand = {
             if (thief === victim) return m.reply(`*${config.visuals.emoji2}* No puedes robarte a ti mismo.`);
 
             const now = Date.now();
-            if (robCooldowns.has(thief) && (now < robCooldowns.get(thief) + 3600000)) {
-                const rem = robCooldowns.get(thief) + 3600000 - now;
+            const cooldownKey = `${group}-${thief}`;
+            if (robCooldowns.has(cooldownKey) && (now < robCooldowns.get(cooldownKey) + 3600000)) {
+                const rem = robCooldowns.get(cooldownKey) + 3600000 - now;
                 return m.reply(`*${config.visuals.emoji2}* \`Agitamiento\`\n\nDebes esperar ${Math.floor(rem / 60000)}m.\n\n> ¡Mantente bajo perfil un tiempo!`);
             }
 
@@ -38,18 +41,22 @@ const robCommand = {
             }
 
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-            if (!db[victim] || (db[victim].wallet || 0) <= 0) {
+            
+            if (!db[group] || !db[group][victim] || (db[group][victim].wallet || 0) <= 0) {
                 return m.reply(`*${config.visuals.emoji2}* \`Cero Ganancia\`\n\nEste usuario no tiene dinero en su cartera.\n\n> ¡Inténtalo con otra billetera!`);
             }
 
-            const amountToSteal = Math.min(db[victim].wallet, 10000);
-            if (!db[thief]) db[thief] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            if (!db[group][thief]) {
+                db[group][thief] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
+            }
 
-            db[victim].wallet -= amountToSteal;
-            db[thief].wallet += amountToSteal;
+            const amountToSteal = Math.min(db[group][victim].wallet, 10000);
+
+            db[group][victim].wallet -= amountToSteal;
+            db[group][thief].wallet += amountToSteal;
 
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-            robCooldowns.set(thief, now);
+            robCooldowns.set(cooldownKey, now);
 
             await conn.sendMessage(m.chat, { 
                 text: `*${config.visuals.emoji3}* \`ASALTO EXITOSO\` *${config.visuals.emoji3}*\n\nHas logrado robarle a @${victim}.\n*${config.visuals.emoji} Botín:* ¥${amountToSteal.toLocaleString()}\n\n> ¡Escapa antes de que se den cuenta!`,
