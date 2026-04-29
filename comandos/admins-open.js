@@ -4,6 +4,7 @@ const openGroup = {
     name: 'open',
     alias: ['abrirgroup', 'abrir'],
     category: 'admins',
+    desc: 'Abre el grupo para que todos los miembros puedan enviar mensajes libremente.',
     isAdmin: true,
     noPrefix: true,
 
