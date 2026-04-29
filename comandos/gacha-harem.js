@@ -8,10 +8,13 @@ const haremCommand = {
     name: 'harem',
     alias: ['inventario', 'mis-pjs'],
     category: 'gacha',
+    desc: 'Visualiza la colección de personajes que has reclamado en este grupo.',
     noPrefix: true,
+    isGroup: true,
 
     run: async (conn, m, args) => {
         try {
+            const group = m.chat;
             let targetJid = m.sender;
             let page = 1;
 
@@ -34,19 +37,23 @@ const haremCommand = {
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: Base de datos no encontrada.`);
             const gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
 
+            if (!gachaDB[group]) {
+                return m.reply(`*${config.visuals.emoji2}* No hay registros de personajes en este grupo.`);
+            }
+
             let misPjs = [];
-            for (let id in gachaDB) {
-                if (gachaDB[id].owner === targetId) {
-                    misPjs.push({ ...gachaDB[id], id_db: id });
+            for (let id in gachaDB[group]) {
+                if (gachaDB[group][id].owner === targetId) {
+                    misPjs.push({ ...gachaDB[group][id], id_db: id });
                 }
             }
 
             if (misPjs.length === 0) {
                 if (isMe) {
-                    return m.reply(`*${config.visuals.emoji2}* Aún no tienes personajes reclamados en tu inventario.\n\n> ¡Usa el comando #rw y luego #c para conseguir personajes épicos!`);
+                    return m.reply(`*${config.visuals.emoji2}* Aún no tienes personajes reclamados en tu inventario de este grupo.\n\n> ¡Usa el comando #rw y luego #c para conseguir personajes épicos!`);
                 } else {
                     return conn.sendMessage(m.chat, { 
-                        text: `*${config.visuals.emoji2}* El usuario @${targetId} no tiene personajes reclamados.\n\n> ¡Se recomienda el comando #rw para conseguir!`,
+                        text: `*${config.visuals.emoji2}* El usuario @${targetId} no tiene personajes reclamados en este grupo.\n\n> ¡Se recomienda el comando #rw para conseguir!`,
                         mentions: [targetJid]
                     }, { quoted: m });
                 }
