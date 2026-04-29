@@ -63,13 +63,10 @@ global.loadCommands = async () => {
 
 async function startBot() {
     const sessionDir = './sesion_bot';
+    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir);
+    
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version } = await fetchLatestBaileysVersion();
-
-    process.stdout.write('\x1Bc');
-    CFonts.say('KAZUMA', { 
-        font: 'block', align: 'center', colors: ['cyan', 'magenta'], background: 'transparent', letterSpacing: 1 
-    });
 
     const conn = makeWASocket({
         version,
@@ -81,7 +78,8 @@ async function startBot() {
         },
         browser: Browsers.ubuntu('Chrome'),
         markOnlineOnConnect: true,
-        shouldIgnoreJid: () => false
+        generateHighQualityLinkPreview: true,
+        getMessage: async (key) => { return { conversation: 'Kazuma' } }
     });
 
     await global.loadCommands();
@@ -98,7 +96,9 @@ async function startBot() {
                 let code = await conn.requestPairingCode(phoneNumber);
                 code = code?.match(/.{1,4}/g)?.join('-') || code;
                 console.log(chalk.black.bgCyan(`\n  CODIGO: ${code}  \n`));
-            } catch (error) {}
+            } catch (error) {
+                console.error('Error al generar código:', error);
+            }
         }, 3000);
     }
 
@@ -106,10 +106,20 @@ async function startBot() {
 
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
+        
         if (connection === 'close') {
-            const shouldRestart = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            if (shouldRestart) startBot();
+            const reason = lastDisconnect?.error?.output?.statusCode;
+            console.log(chalk.yellow(`[CONEXIÓN] Cerrada. Razón: ${reason}. Reintentando...`));
+            
+            if (reason === DisconnectReason.loggedOut) {
+                console.log(chalk.red('[!] Sesión cerrada. Elimina la carpeta sesion_bot y vincula de nuevo.'));
+                process.exit();
+            } else {
+                setTimeout(() => startBot(), 5000);
+            }
         } else if (connection === 'open') {
+            process.stdout.write('\x1Bc');
+            CFonts.say('KAZUMA', { font: 'block', align: 'center', colors: ['cyan', 'magenta'] });
             console.log(chalk.greenBright.bold('\n  [✨] ¡KAZUMA CONECTADO!'));
             await loadAllSubBots(conn);
             await loadAllMoodBots(conn);
@@ -118,7 +128,7 @@ async function startBot() {
 
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         let m = chatUpdate.messages[0];
-        if (!m.message) return;
+        if (!m || !m.message) return;
 
         m.chat = m.key.remoteJid;
         m.sender = m.key.participant || m.key.remoteJid;
@@ -138,7 +148,7 @@ async function startBot() {
         const prefixes = config.allPrefixes || ['#', '!', '.'];
         const foundPrefix = prefixes.find(p => body.startsWith(p));
         const usedPrefix = foundPrefix || '';
-        
+
         const commandName = foundPrefix 
             ? body.slice(foundPrefix.length).trim().split(/ +/).shift().toLowerCase()
             : body.trim().split(/ +/).shift().toLowerCase();
