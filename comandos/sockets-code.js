@@ -14,12 +14,13 @@ const codeCommand = {
     name: 'code',
     alias: ['subbot', 'serbot'],
     category: 'sockets',
+    desc: 'Genera un código de vinculación para convertir tu número en un Sub-Bot del sistema.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         const from = m.chat;
         const sessionsPath = path.resolve('./sesiones_subbots');
-        
+
         let targetNumber = args[0] ? args[0].replace(/[^0-9]/g, '') : m.sender.split('@')[0];
         const userSessionPath = path.join(sessionsPath, targetNumber);
 
