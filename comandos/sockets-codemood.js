@@ -10,6 +10,7 @@ const moodCodeCommand = {
     name: 'codemood',
     alias: ['sockets-moods'],
     category: 'sockets',
+    desc: 'Vincula un SubMood mediante un token de seguridad para elevar privilegios de socket.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
