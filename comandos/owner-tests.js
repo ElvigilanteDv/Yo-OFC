@@ -1,67 +1,103 @@
 import { config } from '../config.js';
+import fs from 'fs-extra';
+import path from 'path';
 
-const menuTestCommand = {
-    name: 'menutest',
-    alias: [],
-    category: 'owner',
-    isOwner: true,
+const ecoPath = path.resolve('./config/database/economy/economy.json');
+const rpgPath = path.resolve('./config/database/rpg/rpg.json');
+
+const menuCommand = {
+    name: 'menu',
+    alias: ['help', 'menú', 'ayuda'],
+    category: 'main',
+    desc: 'Muestra la lista de comandos disponibles.',
+    isOwner: false,
     noPrefix: true,
 
-    run: async (conn, m) => {
+    run: async (conn, m, args, usedPrefix) => {
         try {
-            // --- BLINDAJE ABSOLUTO ---
-            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
-            const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            const isRealOwner = senderNumber === realOwnerNumber;
+            const prefix = usedPrefix || '#'; 
+            const user = m.sender.split('@')[0].split(':')[0];
+            const group = m.chat;
+            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
 
-            if (!isRealOwner) {
-                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` *${config.visuals.emoji2}*\n\nSolo el administrador principal tiene autoridad sobre este comando.`);
+            // Configuración de visuales y sesión
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            let settingsPath = '';
+            let currentBotType = 'Mood';
+
+            if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
+                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
+                currentBotType = 'SubBot';
+            } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
+                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+                currentBotType = 'Mood';
             }
-            // -------------------------
 
-            const allCommands = Array.from(global.commands.values());
-            const categories = {};
+            let displayLongName = config.botName;
+            let displayBanner = config.visuals.img1;
 
-            // Agrupamos los comandos por categoría
-            allCommands.forEach(cmd => {
-                const cat = cmd.category ? cmd.category.toUpperCase() : 'SIN CATEGORÍA';
-                if (!categories[cat]) {
-                    categories[cat] = [];
-                }
-                // Evitamos duplicados si el comando tiene alias
-                if (!categories[cat].includes(cmd.name)) {
-                    categories[cat].push(cmd.name);
-                }
-            });
+            if (settingsPath && await fs.pathExists(settingsPath)) {
+                const localData = await fs.readJson(settingsPath);
+                if (localData.longName) displayLongName = localData.longName;
+                if (localData.banner) displayBanner = localData.banner;
+            }
 
-            let menuTxt = `*Hola desarrollador, este es el menú test.*\n\n`;
-            menuTxt += `*Estado:* \`Activo\` 🟢\n`;
-            menuTxt += `*Total:* \`${allCommands.length} comandos\`\n\n`;
+            // Datos de usuario
+            const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
+            const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
+            const wallet = ecoDB[user]?.wallet || 0;
+            const userRpg = rpgDB[group]?.[user] || {};
+            const rank = userRpg.rank || 'Novato de las Cuevas';
+            const diamantes = userRpg.minerals?.diamantes || 0;
 
-            // Ordenamos las categorías alfabéticamente
-            const sortedCategories = Object.keys(categories).sort();
+            const infoBot = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐁𝐎𝐓 ✿︎━━━━╮\n┃ ✐ *Owner* »\n┃ kazuma.giize.com/Dev-FelixOfc\n┃ ✐ *Commands* »\n┃ kazuma.giize.com/commands\n┃ ✐ *Official channel* »\n┃ https://whatsapp.com/channel/0029Vb6sgWdJkK73qeLU0J0N\n╰━━━━━━━━━━━━━━━━━━━╯\n`;
 
-            for (const cat of sortedCategories) {
-                menuTxt += `*╔══[ ${cat} ]══╗*\n`;
+            const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄𝐑 ✿︎━━━━╮\n┃ ✐ *Usuario* »  @${user}\n┃ ✐ *Rango* » ${rank}\n┃ ✐ *Coins* » ¥${wallet.toLocaleString()}\n┃ ✐ *Diamantes* » ${diamantes}\n╰━━━━━━━━━━━━━━━━━━━╯`;
+
+            // Lógica para filtrar comandos por categoría
+            // Asumimos que los comandos están en conn.commands (o donde los cargue tu bot)
+            const allCommands = Array.from(conn.commands.values());
+            const categories = [...new Set(allCommands.map(cmd => cmd.category))];
+
+            const input = args[0]?.toLowerCase();
+            let finalBody = "";
+            let subHeader = "";
+
+            const formatCategory = (cat) => {
+                const cmdsInCat = allCommands.filter(cmd => cmd.category === cat);
+                let catText = `*» (❍ᴥ❍ʋ) \`${cat.toUpperCase()}\` «*\n> ꕥ Comandos de la categoría ${cat}.\n\n`;
                 
-                // Ordenamos los comandos dentro de la categoría
-                const sortedCmds = categories[cat].sort();
-                sortedCmds.forEach(name => {
-                    menuTxt += `*#${name}*\n`;
+                cmdsInCat.forEach(cmd => {
+                    const names = [cmd.name, ...(cmd.alias || [])].map(n => prefix + n).join(', ');
+                    catText += `*✿︎ ${names}*\n> ❀ ${cmd.desc || 'Sin descripción.'}\n\n`;
                 });
-                
-                menuTxt += `*╚══════════════╝*\n\n`;
+                return catText;
+            };
+
+            if (!input) {
+                subHeader = `*☞︎︎︎ Lista Completa de Comandos ☜︎︎︎*\n\n`;
+                finalBody = categories.map(cat => formatCategory(cat)).join('\n');
+            } else if (categories.includes(input)) {
+                subHeader = `*☞︎︎︎ Comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
+                finalBody = formatCategory(input);
+            } else {
+                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Categorías* »\n${categories.map(c => `> ➪ ${c}`).join('\n')}`);
             }
 
-            menuTxt += `> *${config.visuals.emoji4}* Kazuma Bot - Sistema de Auditoría`;
+            let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
+            let textoMenu = `${header}${subHeader}${infoBot}\n${infoUser}\n\n${finalBody}`;
 
-            await conn.sendMessage(m.chat, { text: menuTxt }, { quoted: m });
+            await conn.sendMessage(m.chat, { 
+                image: { url: displayBanner }, 
+                caption: textoMenu,
+                mentions: [m.sender]
+            }, { quoted: m });
 
-        } catch (e) {
-            console.error(e);
-            m.reply(`*${config.visuals.emoji2}* Error al generar el menú de prueba.`);
+        } catch (err) {
+            console.error('Error en el menú dinámico:', err);
         }
     }
 };
 
-export default menuTestCommand;
+export default menuCommand;
