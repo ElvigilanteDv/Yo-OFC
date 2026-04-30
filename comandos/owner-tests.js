@@ -9,7 +9,7 @@ const menuCommand = {
     name: 'menutest',
     alias: ['hel'],
     category: 'main',
-    desc: 'Muestra la lista de comandos disponibles.',
+    desc: 'Muestra la lista de comandos dinámica.',
     isOwner: false,
     noPrefix: true,
 
@@ -18,9 +18,15 @@ const menuCommand = {
             const prefix = usedPrefix || '#'; 
             const user = m.sender.split('@')[0].split(':')[0];
             const group = m.chat;
-            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
+            
+            // Intentar obtener comandos de conn o de la variable global si existe
+            const commandsSource = conn.commands || global.commands;
+            if (!commandsSource) return m.reply('Error: No se pudo acceder a la lista de comandos.');
+            
+            const allCommands = Array.from(commandsSource.values());
+            const categories = [...new Set(allCommands.map(cmd => cmd.category || 'otros'))];
 
-            // Configuración de visuales y sesión
+            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
             let settingsPath = '';
@@ -43,7 +49,6 @@ const menuCommand = {
                 if (localData.banner) displayBanner = localData.banner;
             }
 
-            // Datos de usuario
             const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
             const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
             const wallet = ecoDB[user]?.wallet || 0;
@@ -55,34 +60,32 @@ const menuCommand = {
 
             const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄𝐑 ✿︎━━━━╮\n┃ ✐ *Usuario* »  @${user}\n┃ ✐ *Rango* » ${rank}\n┃ ✐ *Coins* » ¥${wallet.toLocaleString()}\n┃ ✐ *Diamantes* » ${diamantes}\n╰━━━━━━━━━━━━━━━━━━━╯`;
 
-            // Lógica para filtrar comandos por categoría
-            // Asumimos que los comandos están en conn.commands (o donde los cargue tu bot)
-            const allCommands = Array.from(conn.commands.values());
-            const categories = [...new Set(allCommands.map(cmd => cmd.category))];
-
-            const input = args[0]?.toLowerCase();
-            let finalBody = "";
-            let subHeader = "";
-
             const formatCategory = (cat) => {
                 const cmdsInCat = allCommands.filter(cmd => cmd.category === cat);
                 let catText = `*» (❍ᴥ❍ʋ) \`${cat.toUpperCase()}\` «*\n> ꕥ Comandos de la categoría ${cat}.\n\n`;
                 
                 cmdsInCat.forEach(cmd => {
-                    const names = [cmd.name, ...(cmd.alias || [])].map(n => prefix + n).join(', ');
-                    catText += `*✿︎ ${names}*\n> ❀ ${cmd.desc || 'Sin descripción.'}\n\n`;
+                    // Formato exacto de la captura: #name • #alias
+                    const allAliases = [cmd.name, ...(cmd.alias || [])];
+                    const namesString = allAliases.map(n => `*#${n}*`).join(' • ');
+                    
+                    catText += `✿︎ ${namesString}\n> ❀ ${cmd.desc || 'Sin descripción.'}\n\n`;
                 });
                 return catText;
             };
 
+            const input = args[0]?.toLowerCase();
+            let finalBody = "";
+            let subHeader = "";
+
             if (!input) {
-                subHeader = `*☞︎︎︎ Lista Completa de Comandos ☜︎︎︎*\n\n`;
+                subHeader = `*☞︎︎︎ Lista de comandos ☜︎︎︎*\n\n`;
                 finalBody = categories.map(cat => formatCategory(cat)).join('\n');
             } else if (categories.includes(input)) {
-                subHeader = `*☞︎︎︎ Comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
+                subHeader = `*☞︎︎︎ Comandos: \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
                 finalBody = formatCategory(input);
             } else {
-                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Categorías* »\n${categories.map(c => `> ➪ ${c}`).join('\n')}`);
+                return m.reply(`Categoría no encontrada. Disponibles: ${categories.join(', ')}`);
             }
 
             let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
@@ -95,7 +98,7 @@ const menuCommand = {
             }, { quoted: m });
 
         } catch (err) {
-            console.error('Error en el menú dinámico:', err);
+            console.error('Error en menutest:', err);
         }
     }
 };
