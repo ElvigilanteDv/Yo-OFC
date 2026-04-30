@@ -60,6 +60,6 @@ export const logger = (m, conn) => {
         console.log(`${timeLabel} ${chatLabel} ${userLabel} ${typeLabel}: ${chalk.white(content.substring(0, 70))}${content.length > 70 ? '...' : ''}`);
 
     } catch (e) {
-        console.error(chalk.red(`  [⚠️ Logger Error]: ${e.message}`));
+        console.error(chalk.red(`  [🌀 Logger Error]: ${e.message}`));
     }
 };
