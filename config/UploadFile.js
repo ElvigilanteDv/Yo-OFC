@@ -22,6 +22,6 @@ export const uploadToYotsuba = async (buffer, mime) => {
 
         return response.data.url; 
     } catch (error) {
-        throw new Error('Fallo al subir el archivo.');
+        throw new Error('Fallo al subir archivo.');
     }
 };
