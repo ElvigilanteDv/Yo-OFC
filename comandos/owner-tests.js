@@ -19,7 +19,6 @@ const menuCommand = {
             const user = m.sender.split('@')[0].split(':')[0];
             const group = m.chat;
             
-            // Intentar obtener comandos de conn o de la variable global si existe
             const commandsSource = conn.commands || global.commands;
             if (!commandsSource) return m.reply('Error: No se pudo acceder a la lista de comandos.');
             
@@ -62,16 +61,17 @@ const menuCommand = {
 
             const formatCategory = (cat) => {
                 const cmdsInCat = allCommands.filter(cmd => cmd.category === cat);
+                // Cabecera de categoría
                 let catText = `*» (❍ᴥ❍ʋ) \`${cat.toUpperCase()}\` «*\n> ꕥ Comandos de la categoría ${cat}.\n\n`;
                 
-                cmdsInCat.forEach(cmd => {
-                    // Formato exacto de la captura: #name • #alias
+                // Mapeo de comandos sin saltos de línea dobles entre ellos
+                const body = cmdsInCat.map(cmd => {
                     const allAliases = [cmd.name, ...(cmd.alias || [])];
                     const namesString = allAliases.map(n => `*#${n}*`).join(' • ');
-                    
-                    catText += `✿︎ ${namesString}\n> ❀ ${cmd.desc || 'Sin descripción.'}\n\n`;
-                });
-                return catText;
+                    return `✿︎ ${namesString}\n> ❀ ${cmd.desc || 'Sin descripción.'}`;
+                }).join('\n'); // Un solo salto de línea aquí para que queden pegados
+
+                return catText + body + '\n';
             };
 
             const input = args[0]?.toLowerCase();
