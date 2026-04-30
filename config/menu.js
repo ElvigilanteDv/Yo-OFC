@@ -123,7 +123,7 @@ export const menuCategories = {
 *✿︎ \${prefix}brat*
 > ❀ Crea un sticker blanco con texto.`,
 
-    owner: `*» (❍ᴥ❍ʋ) \`OWNER\` «*
+    owner: `*» (❍ᴥ❍ʋ) \`OWNE\` «*
 > ꕥ Comandos del creador.
 
 *✿︎ \${prefix}update • \${prefix}up*
