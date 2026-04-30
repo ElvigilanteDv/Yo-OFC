@@ -6,8 +6,8 @@ const ecoPath = path.resolve('./config/database/economy/economy.json');
 const rpgPath = path.resolve('./config/database/rpg/rpg.json');
 
 const menuCommand = {
-    name: 'menu',
-    alias: ['help', 'menú', 'ayuda'],
+    name: 'menutest',
+    alias: ['hel'],
     category: 'main',
     desc: 'Muestra la lista de comandos disponibles.',
     isOwner: false,
