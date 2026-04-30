@@ -1,5 +1,4 @@
 import { config } from '../config.js';
-import { menuCategories } from '../config/menu.js';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -8,8 +7,9 @@ const rpgPath = path.resolve('./config/database/rpg/rpg.json');
 
 const menuCommand = {
     name: 'menu',
-    alias: ['help', 'menú', 'ayuda'],
+    alias: ['help', 'ayuda', 'menú', 'hel'],
     category: 'main',
+    desc: 'Muestra la lista de comandos dinámica.',
     isOwner: false,
     noPrefix: true,
 
@@ -18,11 +18,16 @@ const menuCommand = {
             const prefix = usedPrefix || '#'; 
             const user = m.sender.split('@')[0].split(':')[0];
             const group = m.chat;
-            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
+            
+            const commandsSource = conn.commands || global.commands;
+            if (!commandsSource) return m.reply('Error: No se pudo acceder a la lista de comandos.');
+            
+            const allCommands = Array.from(commandsSource.values());
+            const categories = [...new Set(allCommands.map(cmd => cmd.category || 'otros'))];
 
+            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
-
             let settingsPath = '';
             let currentBotType = 'Mood';
 
@@ -31,8 +36,6 @@ const menuCommand = {
                 currentBotType = 'SubBot';
             } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
                 settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-                currentBotType = 'Mood';
-            } else {
                 currentBotType = 'Mood';
             }
 
@@ -47,7 +50,6 @@ const menuCommand = {
 
             const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
             const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
-
             const wallet = ecoDB[user]?.wallet || 0;
             const userRpg = rpgDB[group]?.[user] || {};
             const rank = userRpg.rank || 'Novato de las Cuevas';
@@ -71,23 +73,35 @@ const menuCommand = {
 ┃ ✐ *Diamantes* » ${diamantes}
 ╰━━━━━━━━━━━━━━━━━━━╯`;
 
-            let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
-            let subHeader = "";
-            let finalBody = "";
+            const formatCategory = (cat) => {
+                const cmdsInCat = allCommands.filter(cmd => cmd.category === cat);
+                let catText = `*» (❍ᴥ❍ʋ) \`${cat.toUpperCase()}\` «*\n> ꕥ Comandos de la categoría ${cat}.\n\n`;
+                
+                const body = cmdsInCat.map(cmd => {
+                    const allAliases = [cmd.name, ...(cmd.alias || [])];
+                    const namesString = allAliases.map(n => `*#${n}*`).join(' • ');
+                    return `✿︎ ${namesString}\n> ❀ ${cmd.desc || 'Sin descripción.'}`;
+                }).join('\n');
+
+                return catText + body + '\n';
+            };
 
             const input = args[0]?.toLowerCase();
+            let finalBody = "";
+            let subHeader = "";
+
             if (!input) {
-                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos completa ☜︎︎︎*\n\n`;
-                finalBody = Object.values(menuCategories).join('\n\n');
-            } else if (menuCategories[input]) {
-                subHeader = `*☞︎︎︎ Aqui está mi lista de comandos para \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
-                finalBody = menuCategories[input];
+                subHeader = `*☞︎︎︎ Lista de comandos ☜︎︎︎*\n\n`;
+                finalBody = categories.map(cat => formatCategory(cat)).join('\n');
+            } else if (categories.includes(input)) {
+                subHeader = `*☞︎︎︎ Comandos: \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
+                finalBody = formatCategory(input);
             } else {
-                return m.reply(`*${config.visuals.emoji2}* \`Categoría no encontrada\`\n\n*Las categorías disponibles son* »\n${Object.keys(menuCategories).map(c => `> ➪ ${c}`).join('\n')}`);
+                return m.reply(`Categoría no encontrada. Disponibles: ${categories.join(', ')}`);
             }
 
+            let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
             let textoMenu = `${header}${subHeader}${infoBot}\n${infoUser}\n\n${finalBody}`;
-            textoMenu = textoMenu.replace(/\${prefix}/g, prefix);
 
             await conn.sendMessage(m.chat, { 
                 image: { url: displayBanner }, 
