@@ -11,12 +11,29 @@ export const pixelHandler = async (conn, m, config) => {
         const chat = m.key.remoteJid;
         if (chat === 'status@broadcast') return;
 
+        const myJid = conn.user.id.split('@')[0].split(':')[0].replace(/\D/g, '');
+        
+        // --- BLOQUEO MODO SELF ---
+        const subSessionsPath = path.resolve('./sesiones_subbots');
+        const moodSessionsPath = path.resolve('./sesiones_moods');
+        let sessionSettings = {};
+        const subPath = path.join(subSessionsPath, myJid, 'settings.json');
+        const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
+
+        if (fs.existsSync(subPath)) sessionSettings = JSON.parse(fs.readFileSync(subPath, 'utf-8'));
+        else if (fs.existsSync(moodPath)) sessionSettings = JSON.parse(fs.readFileSync(moodPath, 'utf-8'));
+
+        // Si el modo self está ON y el mensaje NO es mío, matamos la ejecución aquí mismo.
+        // Esto evita que salga en consola (logger) y que se procese cualquier comando.
+        if (sessionSettings.selfMode && !m.key.fromMe) return;
+        // -------------------------
+
         const sender = m.sender;
         const isGroup = chat.endsWith('@g.us');
-        
+
         const ownerNumbers = config.owner.map(id => (typeof id === 'string' ? id : id[0]).replace(/\D/g, ''));
         const senderNumber = sender.split('@')[0].replace(/\D/g, '');
-        
+
         const isRealOwner = senderNumber === ownerNumbers[0];
         const isListedOwner = ownerNumbers.includes(senderNumber) || m.key.fromMe;
 
@@ -43,11 +60,9 @@ export const pixelHandler = async (conn, m, config) => {
             : body.trim().split(/ +/).shift().toLowerCase();
 
         if (!isGroup && !isRealOwner) {
-            const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
+            const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner', 'self'];
             if (!allowedPrivateCmds.includes(commandName)) return; 
         }
-
-        const myJid = conn.user.id.split('@')[0].split(':')[0].replace(/\D/g, '');
 
         if (isGroup) {
             const comandosGestion = ['setprimary', 'delprimary', 'sockets', 'bots', 'codemood'];
@@ -84,15 +99,6 @@ export const pixelHandler = async (conn, m, config) => {
         if (cmd.isGroup && !isGroup) {
             return m.reply(`*${config.visuals.emoji4}* \`SÓLO PARA GRUPOS\` *${config.visuals.emoji4}*\n\n> Este comando requiere una comunidad activa para ser ejecutado.`);
         }
-
-        const subSessionsPath = path.resolve('./sesiones_subbots');
-        const moodSessionsPath = path.resolve('./sesiones_moods');
-        let sessionSettings = {};
-        const subPath = path.join(subSessionsPath, myJid, 'settings.json');
-        const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
-
-        if (fs.existsSync(subPath)) sessionSettings = JSON.parse(fs.readFileSync(subPath, 'utf-8'));
-        else if (fs.existsSync(moodPath)) sessionSettings = JSON.parse(fs.readFileSync(moodPath, 'utf-8'));
 
         global.dynamicBotConfig = {
             botName: sessionSettings.shortName || config.botName || 'Kazuma',
