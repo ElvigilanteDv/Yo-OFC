@@ -6,7 +6,7 @@ const stickerCommand = {
     name: 'sticker',
     alias: ['s', 'stiker', 'wm'],
     category: 'stickers',
-    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados (1.2s - 8s).',
+    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados (1.2s - 60s).',
     isGroup: false,
     noPrefix: true,
 
@@ -19,11 +19,11 @@ const stickerCommand = {
                 return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video para crear el sticker.`);
             }
 
-            // Validar duración si es video
+            // Validar duración: Mínimo 1.2s y Máximo 60s (1 minuto)
             if (/video/.test(mime)) {
                 let duration = q.msg?.seconds || q.seconds || 0;
                 if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* El video es muy corto. Mínimo 1.2 segundos.`);
-                if (duration > 8.0) return m.reply(`*${config.visuals.emoji2}* El video es muy largo. Máximo 8 segundos.`);
+                if (duration > 60.0) return m.reply(`*${config.visuals.emoji2}* El video es muy largo. Máximo 1 minuto.`);
             }
 
             let img = await q.download();
@@ -40,7 +40,7 @@ const stickerCommand = {
                 type: StickerTypes.FULL,
                 categories: ['🤩'],
                 id: m.id,
-                quality: 40, // Bajamos un poco la calidad para videos/gifs pesados
+                quality: 30, // Bajamos más la calidad para permitir videos más largos sin exceder 1MB
             });
 
             const buffer = await sticker.toBuffer();
