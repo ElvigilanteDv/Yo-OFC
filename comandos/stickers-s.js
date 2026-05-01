@@ -16,41 +16,40 @@ const stickerCommand = {
             let mime = (q.msg || q).mimetype || q.mimetype || '';
 
             if (!/image|video|webp/.test(mime)) {
-                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video para crear el sticker.`);
+                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video.`);
             }
 
             if (/video/.test(mime)) {
                 let duration = q.msg?.seconds || q.seconds || 0;
-                if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* El video es muy corto. Mínimo 1.2 segundos.`);
-                if (duration > 60.0) return m.reply(`*${config.visuals.emoji2}* El video es muy largo. Máximo 1 minuto.`);
+                if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* Video muy corto (mín 1.2s).`);
+                if (duration > 60.0) return m.reply(`*${config.visuals.emoji2}* Video muy largo (máx 1min).`);
             }
 
             let img = await q.download();
-            if (!img) return m.reply(`*${config.visuals.emoji2}* Error al descargar el archivo.`);
+            if (!img) return m.reply(`*${config.visuals.emoji2}* Error al descargar.`);
 
             const dynamic = await getDynamicConfig(conn);
             let userName = m.pushName || 'User';
             let pack = dynamic.stickers.packname;
             let author = dynamic.stickers.packauthor.replace('@(userName)', userName);
 
-            const isVideo = /video/.test(mime);
-            
             const sticker = new Sticker(img, {
                 pack: pack,
                 author: author,
                 type: StickerTypes.FULL,
                 categories: ['🤩'],
                 id: m.id,
-                quality: isVideo ? 15 : 50, 
+                quality: /video/.test(mime) ? 15 : 50, 
             });
 
             const buffer = await sticker.toBuffer();
             await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m });
 
         } catch (e) {
-            console.error('Error en Sticker:', e);
-            // Mensaje de error genérico para el usuario final
-            m.reply(`*${config.visuals.emoji2}* No se pudo procesar el sticker. Asegúrate de que el video no sea demasiado pesado.`);
+            // Esto te mandará el error real que está dando la consola al chat
+            const errorMessage = e.stack || e.message || String(e);
+            console.error('DETALLE DEL ERROR:', e);
+            m.reply(`*⚠️ ERROR TÉCNICO DETECTADO:*\n\n\`\`\`${errorMessage}\`\`\``);
         }
     }
 };
