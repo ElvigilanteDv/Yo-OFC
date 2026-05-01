@@ -1,7 +1,8 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
+import { config } from '../config.js';
 
-const stickerCommand = {
+const selfCommand = {
     name: 'self',
     alias: ['privado', 'soloyo'],
     category: 'sockets',
@@ -10,36 +11,42 @@ const stickerCommand = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix) => {
-        // Validación estricta: Solo si el mensaje viene de "mí mismo" (la propia sesión)
         if (!m.key.fromMe) return;
 
         const myJid = conn.user.id.split('@')[0].split(':')[0].replace(/\D/g, '');
         const subSessionsPath = path.resolve('./sesiones_subbots');
         const moodSessionsPath = path.resolve('./sesiones_moods');
         
-        let settingsPath = '';
-        const subPath = path.join(subSessionsPath, myJid, 'settings.json');
-        const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
+        let sessionFolder = '';
+        if (fs.existsSync(path.join(subSessionsPath, myJid))) {
+            sessionFolder = path.join(subSessionsPath, myJid);
+        } else if (fs.existsSync(path.join(moodSessionsPath, myJid))) {
+            sessionFolder = path.join(moodSessionsPath, myJid);
+        } else {
+            return m.reply(`*${config.visuals.emoji2}* No se encontró la carpeta de esta sesión.`);
+        }
 
-        if (fs.existsSync(subPath)) settingsPath = subPath;
-        else if (fs.existsSync(moodPath)) settingsPath = moodPath;
-        else return m.reply('No se encontró el archivo de configuración para esta sesión.');
+        const selfFilePath = path.join(sessionFolder, 'self_status.json');
+        
+        if (!fs.existsSync(selfFilePath)) {
+            await fs.writeJson(selfFilePath, { selfMode: false });
+        }
 
-        let settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        let data = await fs.readJson(selfFilePath);
         const action = args[0]?.toLowerCase();
 
         if (action === 'on') {
-            settings.selfMode = true;
-            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-            return m.reply('*Modo Self Activado*\nEl bot ahora ignorará todos los mensajes externos y no los mostrará en consola.');
+            data.selfMode = true;
+            await fs.writeJson(selfFilePath, data);
+            return m.reply(`*${config.visuals.emoji1}* *Modo Self Activado*\nIgnorando mensajes externos y ocultando actividad en consola.`);
         } else if (action === 'off') {
-            settings.selfMode = false;
-            fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-            return m.reply('*Modo Self Desactivado*\nEl bot volverá a responder a todos los usuarios normalmente.');
+            data.selfMode = false;
+            await fs.writeJson(selfFilePath, data);
+            return m.reply(`*${config.visuals.emoji2}* *Modo Self Desactivado*\nEl bot vuelve a modo público.`);
         } else {
             return m.reply(`Uso: *${usedPrefix}self on* o *${usedPrefix}self off*`);
         }
     }
 };
 
-export default stickerCommand;
+export default selfCommand;
