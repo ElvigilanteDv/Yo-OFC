@@ -6,7 +6,7 @@ const stickerCommand = {
     name: 'sticker',
     alias: ['s', 'stiker', 'wm'],
     category: 'stickers',
-    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados.',
+    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados (1.2s - 8s).',
     isGroup: false,
     noPrefix: true,
 
@@ -17,6 +17,13 @@ const stickerCommand = {
 
             if (!/image|video|webp/.test(mime)) {
                 return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video para crear el sticker.`);
+            }
+
+            // Validar duración si es video
+            if (/video/.test(mime)) {
+                let duration = q.msg?.seconds || q.seconds || 0;
+                if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* El video es muy corto. Mínimo 1.2 segundos.`);
+                if (duration > 8.0) return m.reply(`*${config.visuals.emoji2}* El video es muy largo. Máximo 8 segundos.`);
             }
 
             let img = await q.download();
@@ -33,13 +40,14 @@ const stickerCommand = {
                 type: StickerTypes.FULL,
                 categories: ['🤩'],
                 id: m.id,
-                quality: 50,
+                quality: 40, // Bajamos un poco la calidad para videos/gifs pesados
             });
 
             const buffer = await sticker.toBuffer();
             await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error interno al procesar el sticker.`);
         }
     }
