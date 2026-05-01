@@ -34,6 +34,7 @@ const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
 global.commands = new Map();
 global.lastMessageMap = new Map();
+let startTime = Date.now();
 
 global.db = {
     data: {
@@ -64,7 +65,7 @@ global.loadCommands = async () => {
 async function startBot() {
     const sessionDir = './sesion_bot';
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir);
-    
+
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version } = await fetchLatestBaileysVersion();
 
@@ -79,7 +80,7 @@ async function startBot() {
         browser: Browsers.ubuntu('Chrome'),
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
-        getMessage: async (key) => { return { conversation: 'Kazuma' } }
+        getMessage: async (key) => { return null }
     });
 
     await global.loadCommands();
@@ -106,11 +107,11 @@ async function startBot() {
 
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
-        
+
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             console.log(chalk.yellow(`[CONEXIÓN] Cerrada. Razón: ${reason}. Reintentando...`));
-            
+
             if (reason === DisconnectReason.loggedOut) {
                 console.log(chalk.red('[!] Sesión cerrada. Elimina la carpeta sesion_bot y vincula de nuevo.'));
                 process.exit();
@@ -121,6 +122,7 @@ async function startBot() {
             process.stdout.write('\x1Bc');
             CFonts.say('KAZUMA', { font: 'block', align: 'center', colors: ['cyan', 'magenta'] });
             console.log(chalk.greenBright.bold('\n  [✨] ¡KAZUMA CONECTADO!'));
+            startTime = Date.now();
             await loadAllSubBots(conn);
             await loadAllMoodBots(conn);
         }
@@ -129,6 +131,11 @@ async function startBot() {
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         let m = chatUpdate.messages[0];
         if (!m || !m.message) return;
+
+        const messageTimestamp = (m.messageTimestamp?.low || m.messageTimestamp || Date.now()) * 1000;
+        const timeDiff = (Date.now() - messageTimestamp) / 1000;
+        
+        if (timeDiff > 1800) return;
 
         m.chat = m.key.remoteJid;
         m.sender = m.key.participant || m.key.remoteJid;
