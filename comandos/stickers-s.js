@@ -6,7 +6,7 @@ const stickerCommand = {
     name: 'sticker',
     alias: ['s', 'stiker', 'wm'],
     category: 'stickers',
-    desc: 'Convierte imágenes, videos o GIFs en stickers personalizados (1.2s - 60s).',
+    desc: 'Convierte imágenes o videos (1.2s - 60s) en stickers.',
     isGroup: false,
     noPrefix: true,
 
@@ -16,39 +16,40 @@ const stickerCommand = {
             let mime = (q.msg || q).mimetype || q.mimetype || '';
 
             if (!/image|video|webp/.test(mime)) {
-                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video para crear el sticker.`);
+                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video.`);
             }
 
-            // Validar duración: Mínimo 1.2s y Máximo 60s (1 minuto)
+            // Validación de tiempo para videos
             if (/video/.test(mime)) {
                 let duration = q.msg?.seconds || q.seconds || 0;
-                if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* El video es muy corto. Mínimo 1.2 segundos.`);
-                if (duration > 60.0) return m.reply(`*${config.visuals.emoji2}* El video es muy largo. Máximo 1 minuto.`);
+                if (duration < 1.2) return m.reply(`*${config.visuals.emoji2}* Muy corto (mín 1.2s).`);
+                if (duration > 60.0) return m.reply(`*${config.visuals.emoji2}* Muy largo (máx 1min).`);
             }
 
+            // Usamos el método download que definiste en el index
             let img = await q.download();
-            if (!img) return m.reply(`*${config.visuals.emoji2}* Error al descargar.`);
+            if (!img) return m.reply(`*${config.visuals.emoji2}* No pude descargar el archivo.`);
 
             const dynamic = await getDynamicConfig(conn);
             let userName = m.pushName || 'User';
             let pack = dynamic.stickers.packname;
             let author = dynamic.stickers.packauthor.replace('@(userName)', userName);
 
-            let sticker = new Sticker(img, {
+            const sticker = new Sticker(img, {
                 pack: pack,
                 author: author,
                 type: StickerTypes.FULL,
                 categories: ['🤩'],
                 id: m.id,
-                quality: 30, // Bajamos más la calidad para permitir videos más largos sin exceder 1MB
+                quality: /video/.test(mime) ? 20 : 50, // Calidad muy baja para videos largos
             });
 
             const buffer = await sticker.toBuffer();
             await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m });
 
         } catch (e) {
-            console.error(e);
-            m.reply(`*${config.visuals.emoji2}* Error interno al procesar el sticker.`);
+            console.error('Error Sticker:', e);
+            m.reply(`*${config.visuals.emoji2}* Error: El video es muy pesado o el formato no es compatible.`);
         }
     }
 };
