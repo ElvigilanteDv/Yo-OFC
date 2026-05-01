@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 
 const databasePath = path.join(process.cwd(), 'jsons', 'preferencias.json');
@@ -13,20 +13,23 @@ export const pixelHandler = async (conn, m, config) => {
 
         const myJid = conn.user.id.split('@')[0].split(':')[0].replace(/\D/g, '');
         
-        // --- BLOQUEO MODO SELF ---
         const subSessionsPath = path.resolve('./sesiones_subbots');
         const moodSessionsPath = path.resolve('./sesiones_moods');
-        let sessionSettings = {};
-        const subPath = path.join(subSessionsPath, myJid, 'settings.json');
-        const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
+        let sessionFolder = '';
 
-        if (fs.existsSync(subPath)) sessionSettings = JSON.parse(fs.readFileSync(subPath, 'utf-8'));
-        else if (fs.existsSync(moodPath)) sessionSettings = JSON.parse(fs.readFileSync(moodPath, 'utf-8'));
+        if (fs.existsSync(path.join(subSessionsPath, myJid))) {
+            sessionFolder = path.join(subSessionsPath, myJid);
+        } else if (fs.existsSync(path.join(moodSessionsPath, myJid))) {
+            sessionFolder = path.join(moodSessionsPath, myJid);
+        }
 
-        // Si el modo self está ON y el mensaje NO es mío, matamos la ejecución aquí mismo.
-        // Esto evita que salga en consola (logger) y que se procese cualquier comando.
-        if (sessionSettings.selfMode && !m.key.fromMe) return;
-        // -------------------------
+        if (sessionFolder) {
+            const selfFilePath = path.join(sessionFolder, 'self_status.json');
+            if (fs.existsSync(selfFilePath)) {
+                const selfData = JSON.parse(fs.readFileSync(selfFilePath, 'utf-8'));
+                if (selfData.selfMode && !m.key.fromMe) return; 
+            }
+        }
 
         const sender = m.sender;
         const isGroup = chat.endsWith('@g.us');
@@ -99,6 +102,12 @@ export const pixelHandler = async (conn, m, config) => {
         if (cmd.isGroup && !isGroup) {
             return m.reply(`*${config.visuals.emoji4}* \`SÓLO PARA GRUPOS\` *${config.visuals.emoji4}*\n\n> Este comando requiere una comunidad activa para ser ejecutado.`);
         }
+
+        const subPath = path.join(subSessionsPath, myJid, 'settings.json');
+        const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
+        let sessionSettings = {};
+        if (fs.existsSync(subPath)) sessionSettings = JSON.parse(fs.readFileSync(subPath, 'utf-8'));
+        else if (fs.existsSync(moodPath)) sessionSettings = JSON.parse(fs.readFileSync(moodPath, 'utf-8'));
 
         global.dynamicBotConfig = {
             botName: sessionSettings.shortName || config.botName || 'Kazuma',
