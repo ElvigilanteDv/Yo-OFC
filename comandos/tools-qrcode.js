@@ -6,6 +6,7 @@ const qrcodeCommand = {
     alias: ['qr', 'codigoqr'],
     category: 'tools',
     desc: 'Convierte un texto en un código QR usando la API de Kazuma.',
+    isGroup: false,
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
@@ -18,12 +19,11 @@ const qrcodeCommand = {
 
             await conn.sendMessage(m.chat, { 
                 image: { url: apiUrl }, 
-                caption: `*${config.visuals.emoji1}* Aquí tienes tu código QR.\n\n*Texto:* ${text}` 
+                caption: `*${config.visuals.emoji3}* \`QR GENERADO\` *${config.visuals.emoji3}*\n\n*Texto:* ${text}\n\n> Generado correctamente por la API de Kazuma.` 
             }, { quoted: m });
 
         } catch (e) {
-            console.error('Error en QRCode:', e);
-            m.reply(`*${config.visuals.emoji2}* No se pudo generar el código QR. Inténtalo más tarde.`);
+            m.reply(`*${config.visuals.emoji2}* Error al generar el código QR.`);
         }
     }
 };
