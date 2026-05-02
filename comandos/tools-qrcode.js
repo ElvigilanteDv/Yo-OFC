@@ -11,7 +11,7 @@ const qrcodeCommand = {
     run: async (conn, m, args, usedPrefix, commandName, text) => {
         try {
             if (!text) {
-                return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el texto que deseas convertir a QR.\n\nEjemplo:\n*${usedPrefix}${commandName}* https://github.com/FelixOfc`);
+                return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el texto que deseas convertir a QR.\n\nEjemplo:\n*${usedPrefix}${commandName}* https://github.com/Dev-FelixOfc`);
             }
 
             const apiUrl = `https://api.kazuma.giize.com/api/tools/qr?text=${encodeURIComponent(text)}`;
