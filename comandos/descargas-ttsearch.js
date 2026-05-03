@@ -9,7 +9,7 @@ const tiktokSearch = {
     noPrefix: true,
 
     run: async (conn, m, { usedPrefix, commandName, text }) => {
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el texto de búsqueda.\n\nEjemplo: ${usedPrefix}${commandName} RDjavi clips`);
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el texto de búsqueda.\n\nEjemplo: #ttsearch RDjavi clips`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
