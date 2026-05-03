@@ -8,21 +8,20 @@ const tiktokSearch = {
     desc: 'Busca videos en TikTok.',
     noPrefix: true,
 
-    run: async (conn, m, { usedPrefix, commandName, text, args }) => {
-        let query = text || args?.join(' ');
-        if (!query) return m.reply(`*${config.visuals.emoji2}* Ingrese búsqueda.\nEj: ${usedPrefix}${commandName} RDjavi`);
+    run: async (conn, m, args, usedPrefix, commandName, text) => {
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese búsqueda.\nEj: #ttsearch RDjavi`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/search/tiktok?query=${encodeURIComponent(query)}&apikey=kzm-71kPY-SJoqbOKj`);
+            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/search/tiktok?query=${encodeURIComponent(text)}&apikey=kzm-71kPY-SJoqbOKj`);
 
             if (!res.status || !res.data?.length) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
                 return m.reply('Sin resultados.');
             }
 
-            let txt = `*${config.visuals.emoji3} Resultados:* ${query}\n\n`;
+            let txt = `*${config.visuals.emoji3} Resultados:* ${text}\n\n`;
             res.data.slice(0, 10).forEach((v, i) => {
                 txt += `*${i + 1}.* ${v.title || 'TikTok'}\n   👤 ${v.author.nickname}\n   📥 ${v.play}\n\n`;
             });
