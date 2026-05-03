@@ -5,28 +5,22 @@ const aiKazuma = {
     name: 'kazuma',
     alias: ['ai', 'ia', 'gemini'],
     category: 'ia',
-    desc: 'Habla con la IA personalizada de Kazuma.',
+    desc: 'Habla con la IA de Kazuma.',
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        const isPrefixed = m.body.startsWith(usedPrefix);
-        const cmd = commandName.toLowerCase();
-
-        if ((cmd === 'kazuma' || cmd === 'gemini') && !isPrefixed) return;
-
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Hola ${m.pushName}, ¿en qué puedo ayudarte?`);
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Hola ${m.pushName}, ¿qué necesitas?`);
 
         await conn.sendMessage(m.chat, { react: { text: '🧠', key: m.key } });
 
-        const prompt = `Serás Kazuma, un bot de WhatsApp que usa ESM como su motor principal. Tu creador es Félix Ofc, un apasionado Joven de 14 años que se centra en brindar a los usuarios una experiencia inolvidable y lo mejor es que le gusta que los usuarios tengan todo gratis aunque el tenga que esforzarse pagando gastos. Debes llamar a los usuarios por su nombre (${m.pushName}), eres frío, apartado y aunque tienes modales al hablar con las personas, si te enojan debes hablarle de manera fría y cortante. Responde a lo siguiente: `;
+        const prompt = `Serás Kazuma, un bot de WhatsApp que usa ESM como su motor principal. Tu creador es Félix Ofc, un apasionado Joven de 14 años que brinda todo gratis. Llama al usuario por su nombre (${m.pushName}), eres frío, apartado, pero con modales. Si te enojan, sé cortante. Responde: `;
 
         try {
-            const cookie = 'Cookie'; 
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/ai/gemini?text=${encodeURIComponent(prompt + text)}&cookie=${cookie}&apikey=kzm-71kPY-SJoqbOKj`);
+            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/ai/gemini?text=${encodeURIComponent(prompt + text)}&cookie=Cookie&apikey=kzm-71kPY-SJoqbOKj`);
 
             if (!res.status || !res.data?.response) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('No obtuve respuesta de la IA.');
+                return m.reply('IA sin respuesta.');
             }
 
             await m.reply(res.data.response);
