@@ -7,6 +7,7 @@ export const config = {
         '573508941325@s.whatsapp.net', 
         '125860308893859@lid'
     ], 
+    support: '50557888080',
     prefix: '#',
     allPrefixes: ['#', '!', '.'],
 
@@ -26,5 +27,5 @@ export const config = {
         img1: 'https://files.catbox.moe/9ssbf9.jpg'
     },
 
-    apiNex: 'NEX-0868C926ADF94B19A51E18C4'
+    apiKzm: 'kzm-A1b2C-Akoajzpu'
 };
