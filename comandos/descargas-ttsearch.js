@@ -5,7 +5,7 @@ const tiktokSearch = {
     name: 'ttsearch',
     alias: ['tiktoksearch', 'tiktoks'],
     category: 'descargas',
-    desc: 'Busca videos en TikTok.',
+    desc: 'Busca videos en TikTok con todo y enlace de descarga.',
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
