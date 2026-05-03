@@ -14,14 +14,14 @@ const aiKazuma = {
         await conn.sendMessage(m.chat, { react: { text: '🧠', key: m.key } });
         const { key } = await m.reply('*⌛* Procesando respuesta, espera un momento...');
 
-        const prompt = `Serás Kazuma, un bot de WhatsApp creado por Félix Ofc (14 años). Llama al usuario por su nombre (${m.pushName}). Eres frío y apartado, pero con modales. Si te enojan, sé cortante. IMPORTANTE: Usa emojis para dar vida a tus respuestas y para las negritas usa UN SOLO asterisco, ejemplo: *texto*. No uses doble asterisco. Responde: `;
+        const prompt = `Actúa como Kazuma, el asistente inteligente de este bot creado por Félix Ofc. Tu personalidad es alegre, servicial y muy entusiasta. Debes ser amigable con ${m.pushName} y demostrar mucha energía en cada respuesta. Usa emojis variados para que los mensajes se sientan vivos. IMPORTANTE: Para resaltar texto en negrita utiliza únicamente UN solo asterisco, por ejemplo: *así*. No utilices doble asterisco bajo ninguna circunstancia. Responde de forma creativa a lo siguiente: `;
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/ai/gemini?text=${encodeURIComponent(prompt + text)}&cookie=Cookie&apikey=kzm-71kPY-SJoqbOKj`);
+            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/ai/gemini?text=${encodeURIComponent(prompt + text)}&cookie=Cookie&apikey=${config.apiKzm}`);
 
             if (!res.status || !res.data?.response) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return conn.sendMessage(m.chat, { text: 'IA sin respuesta.', edit: key });
+                return conn.sendMessage(m.chat, { text: 'La IA no devolvió una respuesta válida.', edit: key });
             }
 
             await conn.sendMessage(m.chat, { text: res.data.response, edit: key });
