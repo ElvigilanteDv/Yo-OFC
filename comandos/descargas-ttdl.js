@@ -17,7 +17,7 @@ const tiktokDownload = {
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/download/tiktok?url=${link}&apikey=kzm-71kPY-SJoqbOKj`);
+            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/download/tiktok?url=${link}&apikey=${config.apiKzm}`);
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
