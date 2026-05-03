@@ -5,41 +5,34 @@ const tiktokDownload = {
     name: 'tiktok',
     alias: ['tt', 'ttdl'],
     category: 'descargas',
-    desc: 'Descarga videos de TikTok por enlace.',
+    desc: 'Descarga videos de TikTok.',
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el enlace.`);
+        // Extraemos solo la URL (elimina el texto de "TikTok Lite" etc.)
+        const urlMatch = text?.match(/https?:\/\/[^\s]+/gi);
+        const link = urlMatch ? urlMatch[0] : null;
+
+        if (!link) return m.reply(`*${config.visuals.emoji2}* Enlace no válido.`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const apiKey = 'kzm-71kPY-SJoqbOKj';
-            // Se envía el texto directo sin encodeURIComponent
-            const fullUrl = `https://api.kazuma.giize.com/api/download/tiktok?url=${text}&apikey=${apiKey}`;
-
-            const { data: res } = await axios.get(fullUrl);
+            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/download/tiktok?url=${link}&apikey=kzm-71kPY-SJoqbOKj`);
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('La API no encontró el video.');
+                return m.reply('Video no encontrado.');
             }
 
             const { title, author, media } = res.data;
-            let txt = `*${config.visuals.emoji3} TikTok Descargado*\n\n`;
-            txt += `📝 *Título:* ${title}\n`;
-            txt += `👤 *Autor:* ${author.nickname}\n`;
-            txt += `📦 *Tamaño:* ${media.size}`;
+            let txt = `*${config.visuals.emoji3} TikTok*\n\n📝 ${title}\n👤 ${author.nickname}\n📦 ${media.size}`;
 
-            await conn.sendMessage(m.chat, { 
-                video: { url: media.no_watermark }, 
-                caption: txt 
-            }, { quoted: m });
-            
+            await conn.sendMessage(m.chat, { video: { url: media.no_watermark }, caption: txt }, { quoted: m });
             await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
         } catch (e) {
             await conn.sendMessage(m.chat, { react: { text: '✖️', key: m.key } });
-            m.reply(`*${config.visuals.emoji2}* Error: ${e.response?.data?.message || e.message}`);
+            m.reply(`*${config.visuals.emoji2}* Error: ${e.response?.data?.error || e.message}`);
         }
     }
 };
