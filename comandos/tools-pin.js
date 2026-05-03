@@ -4,7 +4,7 @@ import axios from 'axios';
 const pinterestCommand = {
     name: 'pinterest',
     alias: ['pin', 'pinter'],
-    category: 'descargas',
+    category: 'tools',
     desc: 'Busca imágenes en Pinterest usando la API de Kazuma.',
     noPrefix: true,
 
