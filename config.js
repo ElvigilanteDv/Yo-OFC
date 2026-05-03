@@ -14,7 +14,11 @@ export const config = {
     getBotType: (conn) => {
         const userNumber = conn.user.id.split(':')[0];
         const subBotPath = path.resolve(`./sesiones_subbots/${userNumber}`);
-        return fs.existsSync(subBotPath) ? '*Sub-Bot*' : '*Mood*';
+        const moodsPath = path.resolve(`./sesiones_moods/${userNumber}`);
+        
+        if (fs.existsSync(subBotPath)) return '*Sub-Bot*';
+        if (fs.existsSync(moodsPath)) return '*Mood*';
+        return '*Mood*';
     },
 
     visuals: {
