@@ -15,7 +15,7 @@ const pinterestCommand = {
                 return m.reply(`*${config.visuals.emoji2}* Ingrese el texto de búsqueda.\n\nEjemplo: ${usedPrefix}${commandName} Yotsuba Nakano`);
             }
 
-            if (m.react) m.react('⌛');
+            await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
             const apiKey = 'kzm-71kPY-SJoqbOKj';
             const apiUrl = `https://api.kazuma.giize.com/api/search/pinterest?query=${encodeURIComponent(text)}&apikey=${apiKey}`;
@@ -24,7 +24,7 @@ const pinterestCommand = {
             const res = response.data;
 
             if (!res.status || !res.data || res.data.length === 0) {
-                if (m.react) m.react('❌');
+                await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
                 return m.reply(`*${config.visuals.emoji2}* No encontré resultados.`);
             }
 
@@ -40,10 +40,10 @@ const pinterestCommand = {
                 }
             }
 
-            if (m.react) m.react('✅');
+            await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
 
         } catch (e) {
-            if (m.react) m.react('✖️');
+            await conn.sendMessage(m.chat, { react: { text: '✖️', key: m.key } });
             m.reply(`*${config.visuals.emoji2}* Error en la API de Kazuma.`);
         }
     }
