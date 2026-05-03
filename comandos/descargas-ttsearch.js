@@ -23,7 +23,9 @@ const tiktokSearch = {
 
             let txt = `*${config.visuals.emoji3} Resultados:* ${text}\n\n`;
             res.data.slice(0, 10).forEach((v, i) => {
-                txt += `*${i + 1}.* ${v.title || 'TikTok'}\n   👤 ${v.author.nickname}\n   📥 ${v.play}\n\n`;
+                txt += `*${i + 1}.* ${v.title || 'TikTok'}\n`;
+                txt += `   👤 *Autor:* ${v.author.nickname}\n`;
+                txt += `   📥 *Enlace de descarga »* ${v.play}\n\n`;
             });
 
             await conn.sendMessage(m.chat, { image: { url: res.data[0].cover }, caption: txt.trim() }, { quoted: m });
