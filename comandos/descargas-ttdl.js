@@ -9,23 +9,26 @@ const tiktokDownload = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el enlace.\nEj: #tiktok https://vm.tiktok.com/...`);
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el enlace.`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/download/tiktok?url=${encodeURIComponent(text)}&apikey=kzm-71kPY-SJoqbOKj`);
+            const apiKey = 'kzm-71kPY-SJoqbOKj';
+            // Se envía el texto directo sin encodeURIComponent
+            const fullUrl = `https://api.kazuma.giize.com/api/download/tiktok?url=${text}&apikey=${apiKey}`;
+
+            const { data: res } = await axios.get(fullUrl);
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('La API no devolvió datos válidos.');
+                return m.reply('La API no encontró el video.');
             }
 
-            const { title, author, media, stats } = res.data;
+            const { title, author, media } = res.data;
             let txt = `*${config.visuals.emoji3} TikTok Descargado*\n\n`;
             txt += `📝 *Título:* ${title}\n`;
             txt += `👤 *Autor:* ${author.nickname}\n`;
-            txt += `📊 *Stats:* ${stats.likes} ❤️ | ${stats.shares} 🚀\n`;
             txt += `📦 *Tamaño:* ${media.size}`;
 
             await conn.sendMessage(m.chat, { 
