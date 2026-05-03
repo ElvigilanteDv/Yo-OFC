@@ -4,7 +4,7 @@ import axios from 'axios';
 const pinterestCommand = {
     name: 'pinterest',
     alias: ['pin', 'pinter'],
-    category: 'tools',
+    category: 'descargas',
     desc: 'Busca imágenes en Pinterest usando la API de Kazuma.',
     noPrefix: true,
 
@@ -16,8 +16,7 @@ const pinterestCommand = {
 
             await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
-            const apiKey = 'kzm-71kPY-SJoqbOKj';
-            const apiUrl = `https://api.kazuma.giize.com/api/search/pinterest?query=${encodeURIComponent(text)}&apikey=${apiKey}`;
+            const apiUrl = `https://api.kazuma.giize.com/api/search/pinterest?query=${encodeURIComponent(text)}&apikey=${config.apiKzm}`;
 
             const response = await axios.get(apiUrl);
             const res = response.data;
