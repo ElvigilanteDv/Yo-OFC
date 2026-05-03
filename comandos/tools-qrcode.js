@@ -15,9 +15,8 @@ const qrcodeCommand = {
                 return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el texto que deseas convertir a QR.\n\nEjemplo:\n*${usedPrefix}${commandName}* https://github.com/Dev-FelixOfc`);
             }
 
-            const apiKey = 'kzm-71kPY-SJoqbOKj';
             const formattedText = text.replace(/\s+/g, '+');
-            const apiUrl = `https://api.kazuma.giize.com/api/tools/qr?text=${encodeURIComponent(formattedText)}&apikey=${apiKey}`;
+            const apiUrl = `https://api.kazuma.giize.com/api/tools/qr?text=${encodeURIComponent(formattedText)}&apikey=${config.apiKzm}`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: apiUrl }, 
