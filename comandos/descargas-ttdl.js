@@ -9,7 +9,6 @@ const tiktokDownload = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        // Extraemos solo la URL (elimina el texto de "TikTok Lite" etc.)
         const urlMatch = text?.match(/https?:\/\/[^\s]+/gi);
         const link = urlMatch ? urlMatch[0] : null;
 
