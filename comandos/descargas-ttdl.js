@@ -9,7 +9,7 @@ const tiktokDownload = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el enlace de TikTok.\nEj: #tiktok https://vm.tiktok.com/ZS9NoPsEFo/`);
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el enlace.\nEj: #tiktok https://vm.tiktok.com/...`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
@@ -18,14 +18,14 @@ const tiktokDownload = {
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('No se pudo obtener el video.');
+                return m.reply('La API no devolvió datos válidos.');
             }
 
             const { title, author, media, stats } = res.data;
             let txt = `*${config.visuals.emoji3} TikTok Descargado*\n\n`;
             txt += `📝 *Título:* ${title}\n`;
-            txt += `👤 *Autor:* ${author.nickname} (@${author.username})\n`;
-            txt += `📊 *Stats:* ${stats.likes} likes, ${stats.shares} compartidos\n`;
+            txt += `👤 *Autor:* ${author.nickname}\n`;
+            txt += `📊 *Stats:* ${stats.likes} ❤️ | ${stats.shares} 🚀\n`;
             txt += `📦 *Tamaño:* ${media.size}`;
 
             await conn.sendMessage(m.chat, { 
@@ -34,9 +34,9 @@ const tiktokDownload = {
             }, { quoted: m });
             
             await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
-        } catch {
+        } catch (e) {
             await conn.sendMessage(m.chat, { react: { text: '✖️', key: m.key } });
-            m.reply('Error al procesar el enlace.');
+            m.reply(`*${config.visuals.emoji2}* Error: ${e.response?.data?.message || e.message}`);
         }
     }
 };
