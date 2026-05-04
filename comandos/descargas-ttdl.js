@@ -12,7 +12,7 @@ const tiktokDownload = {
         const urlMatch = text?.match(/https?:\/\/[^\s]+/gi);
         const link = urlMatch ? urlMatch[0] : null;
 
-        if (!link) return m.reply(`*${config.visuals.emoji2}* Enlace no válido.`);
+        if (!link) return m.reply(`*${config.visuals.emoji2}* Ingresa un enlace para descargar el vídeo.`);
         
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
