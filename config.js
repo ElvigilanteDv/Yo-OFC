@@ -31,5 +31,5 @@ export const config = {
         img1: 'https://files.catbox.moe/9ssbf9.jpg'
     },
 
-    apiKzm: 'kzm-A1b2C-Akoajzpu'
+    apiKzm: 'kzm-AkpQk-lKhaizmu'
 };
