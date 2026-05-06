@@ -16,7 +16,7 @@ const pinterestCommand = {
 
             await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
-            const apiUrl = `https://api.kazuma.giize.com/api/search/pinterest?query=${encodeURIComponent(text)}&apikey=${config.apiKzm}`;
+            const apiUrl = `https://rest.kazuma.giize.com/api/search/pinterest?query=${encodeURIComponent(text)}&apiKey=${config.apiKzm}`;
 
             const response = await axios.get(apiUrl);
             const res = response.data;
