@@ -14,7 +14,7 @@ const tiktokSearch = {
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/search/tiktok?query=${encodeURIComponent(text)}&apikey=${config.apiKzm}`);
+            const { data: res } = await axios.get(`https://rest.kazuma.giize.com/api/search/tiktok?query=${encodeURIComponent(text)}&apiKey=${config.apiKzm}`);
 
             if (!res.status || !res.data?.length) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
