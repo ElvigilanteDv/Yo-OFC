@@ -13,11 +13,11 @@ const tiktokDownload = {
         const link = urlMatch ? urlMatch[0] : null;
 
         if (!link) return m.reply(`*${config.visuals.emoji2}* Ingresa un enlace para descargar el vídeo.`);
-        
+
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`https://api.kazuma.giize.com/api/download/tiktok?url=${link}&apikey=${config.apiKzm}`);
+            const { data: res } = await axios.get(`https://rest.kazuma.giize.com/api/download/tiktok?url=${link}&apiKey=${config.apiKzm}`);
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
