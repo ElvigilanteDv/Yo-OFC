@@ -1,41 +1,48 @@
 #!/bin/bash
 
-# ==========================================
-#   🛠️ SCRIPT DE MANTENIMIENTO KAZUMA-BOT
-#   👑 CREADOR: Félix OFC (Dev-FelixOfc)
-#   📝 NOTA: Este script sirve para limpiar 
-#      la sesión actual del bot y forzar un 
-#      nuevo código de vinculación. Úsalo si 
-#      quieres cambiar de número o si la 
-#      sesión está corrupta.
-# ==========================================
-
-# Colores para la consola
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-echo -e "${CYAN}------------------------------------------${NC}"
-echo -e "${GREEN}    INICIANDO LIMPIEZA DE KAZUMA-BOT      ${NC}"
-echo -e "${CYAN}------------------------------------------${NC}"
+clear
+echo -e "${CYAN}┏━━━━✿︎ Kazuma-Mr-Bot ✿︎━━━━╮${NC}"
+echo -e "${CYAN}┃ ${NC}${YELLOW}✐ Iniciando Mantenimiento Total${NC}"
+echo -e "${CYAN}┃ ${NC}${RED}✐ Preparando limpieza de datos...${NC}"
+echo -e "${CYAN}╰━━━━━━━━━━━━━━━━━━━╯${NC}"
+echo ""
 
-# Paso 1: Borrar carpeta de sesión principal
 if [ -d "sesion_bot" ]; then
-    echo -e "${RED}[!] Borrando sesión del Bot Principal...${NC}"
+    echo -e "${RED}[!] Eliminando sesión principal...${NC}"
     rm -rf sesion_bot
+    sleep 1
 else
-    echo -e "${GREEN}[✓] La sesión principal ya está limpia.${NC}"
+    echo -e "${GREEN}[✓] Sesión principal limpia.${NC}"
 fi
 
-# Paso 2: Borrar sesiones de sub-bots (opcional si usas la carpeta)
 if [ -d "sesiones_subbots" ]; then
-    echo -e "${RED}[!] Borrando sesiones de Sub-Bots...${NC}"
+    echo -e "${RED}[!] Limpiando base de datos de Sub-Bots...${NC}"
     rm -rf sesiones_subbots
+    sleep 1
 fi
 
-# Paso 3: Reiniciar el proceso
-echo -e "${CYAN}[ℹ️] Reiniciando servidor para nueva vinculación...${NC}"
-echo -e "${GREEN}------------------------------------------${NC}"
+if [ -d "sesiones_moods" ]; then
+    echo -e "${RED}[!] Limpiando base de datos de Mood-Bots...${NC}"
+    rm -rf sesiones_moods
+    sleep 1
+fi
+
+if [ -d "tmp" ]; then
+    echo -e "${YELLOW}[!] Vaciando archivos temporales...${NC}"
+    rm -rf tmp/*
+fi
+
+echo ""
+echo -e "${GREEN}┏━━━━✿︎ LIMPIEZA FINALIZADA ✿︎━━━━╮${NC}"
+echo -e "${GREEN}┃ ${NC}${CYAN}✐ Sistema optimizado.${NC}"
+echo -e "${GREEN}┃ ${NC}${YELLOW}✐ Reiniciando para nueva vinculación...${NC}"
+echo -e "${GREEN}╰━━━━━━━━━━━━━━━━━━━━━━━╯${NC}"
+echo ""
 
 npm start
