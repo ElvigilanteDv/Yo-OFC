@@ -10,7 +10,6 @@ const menuCommand = {
     alias: ['help', 'ayuda', 'menú', 'hel'],
     category: 'main',
     desc: 'Muestra la lista de comandos dinámica.',
-    isOwner: false,
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix) => {
@@ -23,7 +22,7 @@ const menuCommand = {
             if (!commandsSource) return m.reply('Error: No se pudo acceder a la lista de comandos.');
 
             const allCommands = Array.from(commandsSource.values());
-            
+
             const categories = [...new Set(allCommands
                 .map(cmd => cmd.category)
                 .filter(cat => cat && cat !== 'todos' && cat !== 'main')
@@ -101,7 +100,9 @@ const menuCommand = {
                 subHeader = `*☞︎︎︎ Comandos: \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
                 finalBody = formatCategory(input);
             } else {
-                return m.reply(`Categoría no encontrada. Disponibles: ${categories.join(', ')}`);
+                let catList = categories.map(cat => `› ${cat}`).join('\n');
+                let errorMsg = `*${config.visuals.emoji2} \`Categoría no encontrada\` ${config.visuals.emoji2}*\n\n» La categoría *${input}*, no fue encontrada.\n\n${config.visuals.emoji3} *Categorías existentes* »\n${catList}\n\n> ¡Si necesitas el menú completo, simplemente escribe *${prefix}help!*`;
+                return m.reply(errorMsg);
             }
 
             let header = `¡Hola! Soy ${displayLongName} *(${currentBotType})*.\n\n`;
