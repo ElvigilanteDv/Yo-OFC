@@ -16,6 +16,22 @@ const setBotName = {
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
             const isOwner = config.owner.includes(m.sender);
 
+            // --- VALIDACIÓN DE SOCKET PRINCIPAL ---
+            // Si la conexión actual no tiene una carpeta en sub-sesiones o moods, 
+            // asumimos que es el socket principal (session_bot).
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            
+            const isSubBot = await fs.pathExists(path.join(subSessionsPath, botNumber));
+            const isMoodBot = await fs.pathExists(path.join(moodSessionsPath, botNumber));
+
+            if (!isSubBot && !isMoodBot) {
+                return await conn.sendMessage(from, { 
+                    text: `*${config.visuals.emoji2}* Este comando no está disponible en el socket principal. Solo puede usarse en sub-bots personales.` 
+                }, { quoted: m });
+            }
+            // ---------------------------------------
+
             if (botNumber !== user && !isOwner) {
                 return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su nombre.` }, { quoted: m });
             }
@@ -34,16 +50,11 @@ const setBotName = {
                 longName = fullText.trim();
             }
 
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
             let userSettingsPath = '';
-
-            if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
+            if (isSubBot) {
                 userSettingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
+            } else if (isMoodBot) {
                 userSettingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            } else {
-                return m.reply(`*${config.visuals.emoji2}* Carpeta de sesión no encontrada.`);
             }
 
             let localConfig = (await fs.pathExists(userSettingsPath)) ? await fs.readJson(userSettingsPath) : {};
@@ -54,6 +65,7 @@ const setBotName = {
             await fs.writeJson(userSettingsPath, localConfig, { spaces: 2 });
             await m.reply(`*${config.visuals.emoji3} \`CONFIGURACIÓN SOCKET\` ${config.visuals.emoji3}*\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado correctamente.`);
         } catch (e) {
+            console.error(e);
             await m.reply(`*${config.visuals.emoji2}* Error al guardar el nombre.`);
         }
     }
