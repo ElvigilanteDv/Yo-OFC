@@ -18,12 +18,16 @@ const menuCommand = {
             const prefix = usedPrefix || '#'; 
             const user = m.sender.split('@')[0].split(':')[0];
             const group = m.chat;
-            
+
             const commandsSource = conn.commands || global.commands;
             if (!commandsSource) return m.reply('Error: No se pudo acceder a la lista de comandos.');
-            
+
             const allCommands = Array.from(commandsSource.values());
-            const categories = [...new Set(allCommands.map(cmd => cmd.category || 'otros'))];
+            
+            const categories = [...new Set(allCommands
+                .map(cmd => cmd.category)
+                .filter(cat => cat && cat !== 'todos' && cat !== 'main')
+            )];
 
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
             const subSessionsPath = path.resolve('./sesiones_subbots');
@@ -66,7 +70,7 @@ const menuCommand = {
 ┃ https://whatsapp.com/channel/0029Vb6sgWdJkK73qeLU0J0N
 ╰━━━━━━━━━━━━━━━━━━━╯\n`;
 
-            const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄𝐑 ✿︎━━━━╮
+            const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄 R ✿︎━━━━╮
 ┃ ✐ *Usuario* »  @${user}
 ┃ ✐ *Rango* » ${rank}
 ┃ ✐ *Coins* » ¥${wallet.toLocaleString()}
@@ -76,7 +80,7 @@ const menuCommand = {
             const formatCategory = (cat) => {
                 const cmdsInCat = allCommands.filter(cmd => cmd.category === cat);
                 let catText = `*» (❍ᴥ❍ʋ) \`${cat.toUpperCase()}\` «*\n> ꕥ Comandos de la categoría ${cat}.\n\n`;
-                
+
                 const body = cmdsInCat.map(cmd => {
                     const allAliases = [cmd.name, ...(cmd.alias || [])];
                     const namesString = allAliases.map(n => `*#${n}*`).join(' • ');
@@ -91,7 +95,7 @@ const menuCommand = {
             let subHeader = "";
 
             if (!input) {
-                subHeader = `*☞︎︎︎ Lista de comandos ☜︎︎︎*\n\n`;
+                subHeader = `*☞︎︎︎ Aquí está mi lista de comandos ☜︎︎︎*\n\n`;
                 finalBody = categories.map(cat => formatCategory(cat)).join('\n');
             } else if (categories.includes(input)) {
                 subHeader = `*☞︎︎︎ Comandos: \`${input.toUpperCase()}\` ☜︎︎︎*\n\n`;
