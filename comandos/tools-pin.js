@@ -28,7 +28,7 @@ const pinterestCommand = {
 
             m.reply(`*${config.visuals.emoji3}* Buscando resultados en la API para: ${text}...`);
 
-            const images = res.data.slice(0, 17);
+            const images = res.data.slice(0, 10);
 
             for (let item of images) {
                 if (item.image_url) {
