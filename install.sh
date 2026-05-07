@@ -23,9 +23,9 @@ if [ "$IS_TERMUX" = true ]; then
     npm config set ignore-scripts true
     npm install --no-bin-links
     
-    echo -e "\e[1;34m[*] Aplicando bypass avanzado para Termux...\e[0m"
+    echo -e "\e[1;34m[*] Aplicando bypass total para Termux...\e[0m"
     
-    FAKE_SHARP="const s = () => ({ toBuffer: () => Promise.resolve(Buffer.alloc(0)), resize: () => s(), webp: () => s(), png: () => s() }); s.format = () => ({}); module.exports = s;"
+    FAKE_SHARP="const s = () => ({ toBuffer: () => Promise.resolve(Buffer.alloc(0)), resize: () => s(), webp: () => s(), png: () => s() }); s.format = () => ({}); s.libvipsVersion = () => '0.0.0'; module.exports = s;"
     
     mkdir -p "./node_modules/sharp/lib"
     echo "$FAKE_SHARP" > "./node_modules/sharp/index.js"
@@ -35,7 +35,11 @@ if [ "$IS_TERMUX" = true ]; then
     echo "$FAKE_SHARP" > "./node_modules/wa-sticker-formatter/node_modules/sharp/index.js"
     echo "$FAKE_SHARP" > "./node_modules/wa-sticker-formatter/node_modules/sharp/lib/sharp.js"
     
-    find ./node_modules/wa-sticker-formatter -name "utility.js" -exec sed -i 's/const format = sharp.format();/const format = {};/g' {} + 2>/dev/null
+    # Neutralizamos el archivo que causa los errores de funciones
+    UTILITY_FILE="./node_modules/wa-sticker-formatter/node_modules/sharp/lib/utility.js"
+    if [ -f "$UTILITY_FILE" ]; then
+        echo "module.exports = { vendorLibvips: '0.0.0', pkgConfigLibvips: '0.0.0' };" > "$UTILITY_FILE"
+    fi
 else
     npm install
 fi
