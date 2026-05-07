@@ -36,6 +36,18 @@ global.commands = new Map();
 global.lastMessageMap = new Map();
 let startTime = Date.now();
 
+const tmpDir = path.join(__dirname, 'tmp');
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+setInterval(() => {
+    try {
+        const files = fs.readdirSync(tmpDir);
+        for (const file of files) {
+            fs.unlinkSync(path.join(tmpDir, file));
+        }
+    } catch (e) {}
+}, 5 * 60 * 1000);
+
 global.db = {
     data: {
         chats: {},
@@ -134,7 +146,7 @@ async function startBot() {
 
         const messageTimestamp = (m.messageTimestamp?.low || m.messageTimestamp || Date.now()) * 1000;
         const timeDiff = (Date.now() - messageTimestamp) / 1000;
-        
+
         if (timeDiff > 1800) return;
 
         m.chat = m.key.remoteJid;
