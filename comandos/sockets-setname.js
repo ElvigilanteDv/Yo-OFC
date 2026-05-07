@@ -14,11 +14,7 @@ const setBotName = {
             const from = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
-            const isOwner = config.owner.includes(m.sender);
 
-            // --- VALIDACIÓN DE SOCKET PRINCIPAL ---
-            // Si la conexión actual no tiene una carpeta en sub-sesiones o moods, 
-            // asumimos que es el socket principal (session_bot).
             const subSessionsPath = path.resolve('./sesiones_subbots');
             const moodSessionsPath = path.resolve('./sesiones_moods');
             
@@ -27,13 +23,14 @@ const setBotName = {
 
             if (!isSubBot && !isMoodBot) {
                 return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Este comando no está disponible en el socket principal. Solo puede usarse en sub-bots personales.` 
+                    text: `*${config.visuals.emoji2} \`Comando exclusivo\` ${config.visuals.emoji2}*\n\n» Este comando no está disponible en el socket principal.\n\n> ¡Intenta usarlo desde la session del socket!` 
                 }, { quoted: m });
             }
-            // ---------------------------------------
 
-            if (botNumber !== user && !isOwner) {
-                return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su nombre.` }, { quoted: m });
+            if (botNumber !== user) {
+                return await conn.sendMessage(from, { 
+                    text: `*${config.visuals.emoji2}* Solo el dueño absoluto de esta sesión puede personalizar su nombre.` 
+                }, { quoted: m });
             }
 
             const fullText = args.join(' ');
@@ -65,7 +62,6 @@ const setBotName = {
             await fs.writeJson(userSettingsPath, localConfig, { spaces: 2 });
             await m.reply(`*${config.visuals.emoji3} \`CONFIGURACIÓN SOCKET\` ${config.visuals.emoji3}*\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado correctamente.`);
         } catch (e) {
-            console.error(e);
             await m.reply(`*${config.visuals.emoji2}* Error al guardar el nombre.`);
         }
     }
