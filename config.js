@@ -15,7 +15,7 @@ export const config = {
         const userNumber = conn.user.id.split(':')[0];
         const subBotPath = path.resolve(`./sesiones_subbots/${userNumber}`);
         const moodsPath = path.resolve(`./sesiones_moods/${userNumber}`);
-        
+
         if (fs.existsSync(subBotPath)) return '*Sub-Bot*';
         if (fs.existsSync(moodsPath)) return '*Mood*';
         return '*Mood*';
@@ -31,5 +31,6 @@ export const config = {
         img1: 'https://files.catbox.moe/9ssbf9.jpg'
     },
 
-    apiKzm: 'kzm-AkpQk-lKhaizmu'
+    apiKzm: 'kzm-AkpQk-lKhaizmu',
+    kzmUrl: 'rest.kazuma.giize.com'
 };
