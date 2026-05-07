@@ -4,6 +4,9 @@ import path from 'path';
 
 const databasePath = path.join(process.cwd(), 'jsons', 'preferencias.json');
 const prefixPath = path.join(process.cwd(), 'jsons', 'prefix.json');
+const tmpDir = path.join(process.cwd(), 'tmp');
+
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
 export const pixelHandler = async (conn, m, config) => {
     try {
@@ -12,7 +15,7 @@ export const pixelHandler = async (conn, m, config) => {
         if (chat === 'status@broadcast') return;
 
         const myJid = conn.user.id.split('@')[0].split(':')[0].replace(/\D/g, '');
-        
+
         const subSessionsPath = path.resolve('./sesiones_subbots');
         const moodSessionsPath = path.resolve('./sesiones_moods');
         let sessionFolder = '';
@@ -33,6 +36,13 @@ export const pixelHandler = async (conn, m, config) => {
 
         const sender = m.sender;
         const isGroup = chat.endsWith('@g.us');
+
+        const groupMetadata = isGroup ? await conn.groupMetadata(chat).catch(() => ({})) : {};
+        const participants = isGroup ? (groupMetadata.participants || []) : [];
+        const userParticipant = participants.find(p => p.id === sender) || {};
+        const isAdmin = userParticipant.admin === 'admin' || userParticipant.admin === 'superadmin' || false;
+        const botParticipant = participants.find(p => p.id === conn.user.id.split(':')[0] + '@s.whatsapp.net') || {};
+        const isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin' || false;
 
         const ownerNumbers = config.owner.map(id => (typeof id === 'string' ? id : id[0]).replace(/\D/g, ''));
         const senderNumber = sender.split('@')[0].replace(/\D/g, '');
@@ -94,6 +104,14 @@ export const pixelHandler = async (conn, m, config) => {
 
         if (!cmd) return;
         if (!foundPrefix && !cmd.noPrefix) return;
+
+        if (cmd.isAdmin && isGroup && !isAdmin && !isRealOwner) {
+            return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` *${config.visuals.emoji2}*\n\n> Esta función es exclusiva para administradores del grupo.`);
+        }
+
+        if (cmd.isBotAdmin && isGroup && !isBotAdmin) {
+            return m.reply(`*${config.visuals.emoji2}* \`NECESITO SER ADMIN\` *${config.visuals.emoji2}*\n\n> No puedo ejecutar esta acción sin los permisos de administración necesarios.`);
+        }
 
         if (cmd.isOwner && !isRealOwner && !isListedOwner) {
             return m.reply(`*${config.visuals.emoji2}* \`ACCESO RESTRINGIDO\` *${config.visuals.emoji2}*\n\n> Esta función es exclusiva para los desarrolladores del sistema.`);
