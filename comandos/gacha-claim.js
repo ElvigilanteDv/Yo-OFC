@@ -5,6 +5,7 @@ import { config } from '../config.js';
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
 const ecoPath = path.resolve('./config/database/economy/economy.json');
 const claimCooldowns = new Map();
+const baseGroup = "120363423871589037@g.us";
 
 const claimCommand = {
     name: 'claim',
@@ -34,8 +35,18 @@ const claimCommand = {
 
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
             let ecoDB = JSON.parse(fs.readFileSync(ecoPath, 'utf-8'));
-            let pjId = null;
 
+            if (!gachaDB[group]) {
+                const newGachaData = JSON.parse(JSON.stringify(gachaDB[baseGroup]));
+                Object.keys(newGachaData).forEach(key => {
+                    newGachaData[key].owner = null;
+                    newGachaData[key].status = 'libre';
+                });
+                gachaDB[group] = newGachaData;
+                fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
+            }
+
+            let pjId = null;
             if (args[0] && !isNaN(args[0])) {
                 pjId = args[0];
             } else if (m.quoted) {
@@ -45,7 +56,7 @@ const claimCommand = {
                 }
             }
 
-            if (!pjId || !gachaDB[group] || !gachaDB[group][pjId]) {
+            if (!pjId || !gachaDB[group][pjId]) {
                 return m.reply(`*${config.visuals.emoji2}* Cita el mensaje del personaje que deseas reclamar.`);
             }
 
@@ -54,7 +65,7 @@ const claimCommand = {
 
             if (!ecoDB[group]) ecoDB[group] = {};
             if (!ecoDB[group][user]) ecoDB[group][user] = { wallet: 0, bank: 0 };
-            
+
             const saldo = ecoDB[group][user].wallet || 0;
 
             if (saldo < pj.value) {
