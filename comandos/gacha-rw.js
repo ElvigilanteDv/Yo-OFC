@@ -4,6 +4,7 @@ import path from 'path';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
 const cooldowns = new Map();
+const baseGroup = "120363423871589037@g.us";
 
 const rwCommand = {
     name: 'rw',
@@ -28,7 +29,15 @@ const rwCommand = {
             if (!fs.existsSync(gachaPath)) return m.reply('Error: Base de datos gacha no encontrada.');
             let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
 
-            if (!gachaDB[group]) return m.reply('No hay personajes configurados para este grupo.');
+            if (!gachaDB[group]) {
+                const newGachaData = JSON.parse(JSON.stringify(gachaDB[baseGroup]));
+                Object.keys(newGachaData).forEach(key => {
+                    newGachaData[key].owner = null;
+                    newGachaData[key].status = 'libre';
+                });
+                gachaDB[group] = newGachaData;
+                fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
+            }
 
             let allIds = Object.keys(gachaDB[group]);
             let libresNoSimpson = allIds.filter(id => 
