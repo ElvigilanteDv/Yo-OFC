@@ -21,10 +21,19 @@ const dungeonCommand = {
             const cooldown = 15 * 60 * 1000; 
 
             const botNumber = conn.user.id.split(':')[0];
-            const settingsPath = path.resolve(`./sesiones_subbots/${botNumber}/settings.json`);
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            let settingsPath = '';
+
+            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
+                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
+            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
+                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+            }
+
             let displayShortName = config.botName;
 
-            if (fs.existsSync(settingsPath)) {
+            if (settingsPath && fs.existsSync(settingsPath)) {
                 const localData = await fs.readJson(settingsPath);
                 if (localData.shortName) displayShortName = localData.shortName;
             }
@@ -86,8 +95,7 @@ const dungeonCommand = {
             const textoExito = `*${config.visuals.emoji3}* \`MAZMORRA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n\n¡Has sobrevivido a las profundidades de la mazmorra! Botín obtenido:\n\n⛓️ *Hierro:* ${rewards.hierro}\n🏮 *Obsidiana:* ${rewards.obsidiana}\n🦴 *Huesos:* ${rewards.huesos}\n📜 *Pergaminos:* ${rewards.pergaminos}\n\n💰 *Tesoro hallado:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El peligro aumenta, pero las recompensas también!`;
 
             await conn.sendMessage(m.chat, { 
-                image: { url: 'https://upload.yotsuba.giize.com/u/9WjNxRhX.jpeg' }, 
-                caption: textoExito 
+                text: textoExito 
             }, { quoted: m });
 
         } catch (e) {
