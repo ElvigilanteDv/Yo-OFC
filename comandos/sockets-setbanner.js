@@ -15,11 +15,22 @@ const setBanner = {
             const from = m.chat;
             const user = m.sender.split('@')[0].split(':')[0];
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
-            const isOwner = config.owner.includes(m.sender);
 
-            if (botNumber !== user && !isOwner) {
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            
+            const isSubBot = await fs.pathExists(path.join(subSessionsPath, botNumber));
+            const isMoodBot = await fs.pathExists(path.join(moodSessionsPath, botNumber));
+
+            if (!isSubBot && !isMoodBot) {
                 return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su banner.` 
+                    text: `*${config.visuals.emoji2} \`Comando exclusivo\` ${config.visuals.emoji2}*\n\n» Este comando no está disponible en el socket principal.\n\n> ¡Intenta usarlo desde la session del socket!` 
+                }, { quoted: m });
+            }
+
+            if (botNumber !== user) {
+                return await conn.sendMessage(from, { 
+                    text: `*${config.visuals.emoji2}* Solo el dueño absoluto de esta sesión puede personalizar su banner.` 
                 }, { quoted: m });
             }
 
@@ -40,16 +51,11 @@ const setBanner = {
             const link = await uploadToYotsuba(media, mime);
             const fullLink = `https://upload.yotsuba.giize.com${link}`;
 
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
             let userSettingsPath = '';
-
-            if (await fs.pathExists(path.join(subSessionsPath, botNumber))) {
+            if (isSubBot) {
                 userSettingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (await fs.pathExists(path.join(moodSessionsPath, botNumber))) {
+            } else if (isMoodBot) {
                 userSettingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            } else {
-                return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Carpeta de sesión no encontrada.` }, { quoted: m });
             }
 
             let localConfig = (await fs.pathExists(userSettingsPath)) ? await fs.readJson(userSettingsPath) : {};
