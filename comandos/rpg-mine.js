@@ -21,10 +21,19 @@ const mineCommand = {
             const cooldown = 5 * 60 * 1000; 
 
             const botNumber = conn.user.id.split(':')[0];
-            const settingsPath = path.resolve(`./sesiones_subbots/${botNumber}/settings.json`);
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            let settingsPath = '';
+
+            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
+                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
+            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
+                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+            }
+
             let displayShortName = config.botName;
 
-            if (fs.existsSync(settingsPath)) {
+            if (settingsPath && fs.existsSync(settingsPath)) {
                 const localData = await fs.readJson(settingsPath);
                 if (localData.shortName) displayShortName = localData.shortName;
             }
@@ -89,7 +98,7 @@ const mineCommand = {
             let extraInfo = tieneIman ? `\n🧲 *¡EFECTO IMÁN ACTIVADO!* Has extraído el doble de recursos.\n` : '';
             const textoExito = `*${config.visuals.emoji3}* \`MINERÍA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${extraInfo}\nHas excavado profundamente en las minas. Recursos obtenidos:\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡Sigue explorando las minas para obtener más recursos!`;
 
-            await conn.sendMessage(m.chat, { image: { url: 'https://upload.yotsuba.giize.com/u/T7JWpsWY.jpeg' }, caption: textoExito }, { quoted: m });
+            await conn.sendMessage(m.chat, { text: textoExito }, { quoted: m });
         } catch (e) {
             m.reply(`*${config.visuals.emoji2}* Error en el sistema de minas.`);
         }
