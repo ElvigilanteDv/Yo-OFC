@@ -114,7 +114,7 @@ export const pixelHandler = async (conn, m, config) => {
         }
 
         if (cmd.isOwner && !isRealOwner && !isListedOwner) {
-            return m.reply(`*${config.visuals.emoji2}* \`ACCESO RESTRINGIDO\` *${config.visuals.emoji2}*\n\n> Esta función es exclusiva para los desarrolladores del sistema.`);
+            return m.reply(`*${config.visuals.emoji2}* \`ACCESO RESTRINGIDO\` *${config.visuals.emoji2}*\n\n> Esta función es exclusiva para mi desarrollador.`);
         }
 
         if (cmd.isGroup && !isGroup) {
