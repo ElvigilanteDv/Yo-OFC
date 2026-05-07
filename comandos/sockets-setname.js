@@ -12,16 +12,15 @@ const setBotName = {
     run: async (conn, m, args) => {
         try {
             const from = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
             const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
-            const isOwner = config.owner.includes(m.sender);
-
             const mainBotNumber = config.session_bot.replace(/\D/g, '');
+
             if (botNumber === mainBotNumber) {
-                return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2}* Este comando no está disponible en el socket principal.` 
-                }, { quoted: m });
+                return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Este comando no está disponible en el bot principal.` }, { quoted: m });
             }
+
+            const user = m.sender.split('@')[0].split(':')[0];
+            const isOwner = config.owner.includes(m.sender);
 
             if (botNumber !== user && !isOwner) {
                 return await conn.sendMessage(from, { text: `*${config.visuals.emoji2}* Solo el dueño de este socket puede personalizar su nombre.` }, { quoted: m });
