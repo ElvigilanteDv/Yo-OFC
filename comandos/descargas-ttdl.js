@@ -17,7 +17,7 @@ const tiktokDownload = {
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
         try {
-            const { data: res } = await axios.get(`/api/download/tiktok?url=${link}&apiKey=${config.apiKzm}`);
+            const { data: res } = await axios.get(`${config.kzmUrl}/api/download/tiktok?url=${link}&apiKey=${config.apiKzm}`);
 
             if (!res.status || !res.data) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
