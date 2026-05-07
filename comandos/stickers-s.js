@@ -7,7 +7,7 @@ const sCommand = {
     name: 's',
     alias: ['sticker', 'stiker'],
     category: 'stickers',
-    desc: 'Convierte imágenes o videos en stickers.',
+    desc: 'Convierte imágenes en stickers.',
     isGroup: false,
     noPrefix: true,
 
@@ -16,12 +16,11 @@ const sCommand = {
             const q = m.quoted ? m.quoted : m;
             const mime = (q.msg || q).mimetype || '';
 
-            if (!/image|video/.test(mime)) {
-                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen o video con el comando **s**.`);
+            if (!/image/.test(mime)) {
+                return m.reply(`*${config.visuals.emoji2}* Responde a una imagen con el comando *s*.`);
             }
 
-            const mediaType = mime.split('/')[0];
-            const stream = await downloadContentFromMessage(q.msg || q, mediaType);
+            const stream = await downloadContentFromMessage(q.msg || q, 'image');
             let buffer = Buffer.from([]);
             for await (const chunk of stream) {
                 buffer = Buffer.concat([buffer, chunk]);
@@ -44,7 +43,7 @@ const sCommand = {
             await conn.sendMessage(m.chat, { sticker: stickerBuffer }, { quoted: m });
 
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error al convertir el archivo en sticker.`);
+            m.reply(`*${config.visuals.emoji2}* Error al convertir la imagen en sticker.`);
         }
     }
 };
