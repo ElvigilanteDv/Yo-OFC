@@ -52,7 +52,7 @@ const setBotName = {
             localConfig.lastUpdate = Date.now();
 
             await fs.writeJson(userSettingsPath, localConfig, { spaces: 2 });
-            await m.reply(`*${config.visuals.emoji3} \`CONFIGURACIÓN LOCAL\` ${config.visuals.emoji3}*\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado correctamente.`);
+            await m.reply(`*${config.visuals.emoji3} \`CONFIGURACIÓN SOCKET\` ${config.visuals.emoji3}*\n\n*Corto:* ${shortName}\n*Largo:* ${longName}\n\n> Ajuste aplicado correctamente.`);
         } catch (e) {
             await m.reply(`*${config.visuals.emoji2}* Error al guardar el nombre.`);
         }
