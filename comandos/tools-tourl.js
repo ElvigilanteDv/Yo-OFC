@@ -5,7 +5,7 @@ const tourlCommand = {
     name: 'tourl',
     alias: ['url', 'imglink', 'subir'],
     category: 'tools',
-    desc: 'Carga imágenes o stickers al servidor de Yotsuba para generar un enlace público.',
+    desc: 'Carga archivos (img, video, audio, apk) al servidor de Yotsuba.',
     isOwner: false,
     noPrefix: true,
     isAdmin: false,
@@ -15,8 +15,8 @@ const tourlCommand = {
         const q = m.quoted ? m.quoted : m;
         const mime = (q.msg || q).mimetype || q.mediaType || '';
 
-        if (!mime || !/image|sticker/.test(mime)) {
-            return m.reply(`*${config.visuals.emoji2}* Responde a una imagen con el comando *${usedPrefix}tourl* para generar tu enlace.`);
+        if (!mime || !/image|sticker|video|audio|application\/vnd\.android\.package-archive/.test(mime)) {
+            return m.reply(`*${config.visuals.emoji2}* Responde a una imagen, video, audio o APK con el comando *${usedPrefix}tourl* para generar tu enlace.`);
         }
 
         try {
