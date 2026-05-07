@@ -14,12 +14,17 @@ const inventoryCommand = {
     run: async (conn, m) => {
         try {
             const user = m.sender.split('@')[0].split(':')[0];
-            if (!fs.existsSync(invPath)) return m.reply(`*${config.visuals.emoji2}* Tu mochila está completamente vacía.`);
+            
+            if (!fs.existsSync(invPath)) {
+                return m.reply(`*${config.visuals.emoji2}* Tu mochila está completamente vacía.`);
+            }
 
             const invDb = await fs.readJson(invPath);
             const userInv = invDb[user];
 
-            if (!userInv || Object.keys(userInv).length === 0) return m.reply(`*${config.visuals.emoji2}* Tu mochila está completamente vacía.`);
+            if (!userInv || Object.keys(userInv).length === 0) {
+                return m.reply(`*${config.visuals.emoji2}* Tu mochila está completamente vacía.`);
+            }
 
             const itemMap = {
                 iman: { nombre: "Imán de Minas", emoji: "🧲" },
@@ -38,13 +43,16 @@ const inventoryCommand = {
                 }
             }
 
-            if (!hasItems) return m.reply(`*${config.visuals.emoji2}* No tienes objetos consumibles en tu mochila.`);
+            if (!hasItems) {
+                return m.reply(`*${config.visuals.emoji2}* No tienes objetos consumibles en tu mochila.`);
+            }
+
             inventoryText += `_Puedes adquirir más ítems usando el comando #tienda_`;
 
             await conn.sendMessage(m.chat, { 
-                image: { url: 'https://upload.yotsuba.giize.com/u/JXwecTzS.jpeg' }, 
-                caption: inventoryText 
+                text: inventoryText 
             }, { quoted: m });
+
         } catch (e) {
             m.reply(`*${config.visuals.emoji2}* Hubo un error al abrir tu inventario.`);
         }
