@@ -27,10 +27,19 @@ const chestCommand = {
             const cooldown = tieneEscudo ? 5 * 60 * 1000 : 10 * 60 * 1000; 
 
             const botNumber = conn.user.id.split(':')[0];
-            const settingsPath = path.resolve(`./sesiones_subbots/${botNumber}/settings.json`);
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            let settingsPath = '';
+
+            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
+                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
+            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
+                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
+            }
+
             let displayShortName = config.botName;
 
-            if (fs.existsSync(settingsPath)) {
+            if (settingsPath && fs.existsSync(settingsPath)) {
                 const localData = await fs.readJson(settingsPath);
                 if (localData.shortName) displayShortName = localData.shortName;
             }
@@ -98,8 +107,7 @@ const chestCommand = {
             const textoExito = `*${config.visuals.emoji3}* \`COFRE ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${tieneEscudo ? '🛡️ *¡ESCUDO ACTIVADO!* Tiempo de espera reducido.\n' : ''}\n${randomPhrase}\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El mar siempre tiene tesoros para quienes saben buscar!`;
 
             await conn.sendMessage(m.chat, { 
-                image: { url: 'https://upload.yotsuba.giize.com/u/nwqLhleW.jpeg' }, 
-                caption: textoExito 
+                text: textoExito 
             }, { quoted: m });
 
         } catch (e) {
