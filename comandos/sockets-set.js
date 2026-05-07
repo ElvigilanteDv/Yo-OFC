@@ -12,13 +12,24 @@ const setMenu = {
     run: async (conn, m, args, usedPrefix) => {
         try {
             const from = m.chat;
-            const senderNumber = m.sender.split('@')[0].split(':')[0];
-            const sessionsPath = path.resolve('./sesiones_subbots');
-            const userSessionFolder = path.join(sessionsPath, senderNumber);
+            const user = m.sender.split('@')[0].split(':')[0];
+            const botNumber = conn.user.id.split(':')[0].replace(/\D/g, '');
 
-            if (!fs.existsSync(userSessionFolder)) {
+            const subSessionsPath = path.resolve('./sesiones_subbots');
+            const moodSessionsPath = path.resolve('./sesiones_moods');
+            
+            const isSubBot = await fs.pathExists(path.join(subSessionsPath, botNumber));
+            const isMoodBot = await fs.pathExists(path.join(moodSessionsPath, botNumber));
+
+            if (!isSubBot && !isMoodBot) {
                 return await conn.sendMessage(from, { 
-                    text: `*${config.visuals.emoji2} \`ACCESO DENEGADO\` ${config.visuals.emoji2}*\n\nEste comando solo puede ser ejecutado por usuarios que posean un *Socket* activo en el sistema.` 
+                    text: `*${config.visuals.emoji2} \`Comando exclusivo\` ${config.visuals.emoji2}*\n\n» Este comando no está disponible en el socket principal.\n\n> ¡Intenta usarlo desde la session del socket!` 
+                }, { quoted: m });
+            }
+
+            if (botNumber !== user) {
+                return await conn.sendMessage(from, { 
+                    text: `*${config.visuals.emoji2}* Solo puedes configurar este bot interactuando directamente con tu propio socket.` 
                 }, { quoted: m });
             }
 
