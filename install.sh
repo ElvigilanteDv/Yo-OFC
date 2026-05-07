@@ -34,8 +34,7 @@ if [ "$IS_TERMUX" = true ]; then
     mkdir -p "./node_modules/wa-sticker-formatter/node_modules/sharp/lib"
     echo "$FAKE_SHARP" > "./node_modules/wa-sticker-formatter/node_modules/sharp/index.js"
     echo "$FAKE_SHARP" > "./node_modules/wa-sticker-formatter/node_modules/sharp/lib/sharp.js"
-    
-    # El parche para que utility funcione como funcion
+
     UTILITY_PATCH="module.exports = function() { return { vendorLibvips: '0.0.0', pkgConfigLibvips: '0.0.0' }; };"
     
     U1="./node_modules/sharp/lib/utility.js"
