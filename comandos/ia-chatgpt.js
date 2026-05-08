@@ -4,7 +4,7 @@ import axios from 'axios';
 const aiCommand = {
     name: 'chatgpt',
     alias: ['ia', 'kazuma'],
-    category: 'ai',
+    category: 'ia',
     desc: 'Interactúa con ChatGPT o genera imágenes automáticamente.',
     noPrefix: true,
 
