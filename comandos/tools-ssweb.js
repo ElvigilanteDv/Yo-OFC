@@ -9,10 +9,13 @@ const sswebDownload = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        const urlMatch = text?.match(/https?:\/\/[^\s]+/gi);
-        const link = urlMatch ? urlMatch[0] : null;
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el enlace de la página web.`);
 
-        if (!link) return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el enlace de la página web.`);
+        let link = text.trim().split(/\s+/)[0];
+
+        if (!/^https?:\/\//i.test(link)) {
+            link = `https://${link}`;
+        }
 
         await conn.sendMessage(m.chat, { react: { text: '📸', key: m.key } });
 
