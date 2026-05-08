@@ -17,8 +17,10 @@ const aiCommand = {
 
         try {
             if (isImageRequest) {
-                const search = text.replace(/genera|dibuja|imagen|foto|ia|chatgpt|search|buscame/gi, '').trim();
-                const response = await axios.get(`https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(search || text)}&apiKey=${config.apiKzm}`);
+                const search = text.replace(/(chatgpt|ia|gpt-4|gpt|genera|dibuja|buscame|search|una|un|de|la|el|imagen|foto)/gi, '').trim();
+                
+                const query = search || text;
+                const response = await axios.get(`https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(query)}&apiKey=${config.apiKzm}`);
                 const res = response.data;
 
                 if (!res.status || !res.data || res.data.length === 0) {
@@ -29,7 +31,7 @@ const aiCommand = {
                 const firstImage = res.data[0].image_url;
                 await conn.sendMessage(m.chat, { 
                     image: { url: firstImage }, 
-                    caption: `*${config.visuals.emoji3} Inteligencia Visual*\n\n✨ Aquí tienes la imagen que generé sobre: *${search || text}*`
+                    caption: `*${config.visuals.emoji3} Inteligencia Visual*\n\n✨ Aquí tienes la imagen que generé sobre: *${query}*`
                 }, { quoted: m });
 
             } else {
