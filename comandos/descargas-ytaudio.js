@@ -25,11 +25,11 @@ const youtubeAudio = {
             const videoUrl = firstResult.url;
 
             const infoText = `*${config.visuals.emoji3} YouTube Play ${config.visuals.emoji3}*\n\n` +
-                             `= *Título:* ${firstResult.title}\n` +
-                             `= *Canal:* ${firstResult.channel}\n` +
-                             `= *Publicado:* ${firstResult.publishedAt}\n` +
-                             `= *Duración:* ${firstResult.duration}\n` +
-                             `= *Vistas:* ${firstResult.views}\n\n` +
+                             `*${config.visuals.emoji1} Título* »\n> ${firstResult.title}\n\n` +
+                             `*${config.visuals.emoji1} Canal* »\n> ${firstResult.channel}\n\n` +
+                             `*${config.visuals.emoji1} Publicado* »\n> ${firstResult.publishedAt}\n\n` +
+                             `*${config.visuals.emoji1} Duración* »\n> ${firstResult.duration}\n\n` +
+                             `*${config.visuals.emoji1} Vistas* »\n> ${firstResult.views}\n\n` +
                              `_Enviando audio, espera un momento..._`;
 
             await conn.sendMessage(m.chat, { 
