@@ -20,7 +20,7 @@ const aiCommand = {
                 const search = text.replace(/(chatgpt|ia|gpt-4|gpt|genera|dibuja|buscame|search|una|un|de|la|el|imagen|foto)/gi, '').trim();
                 
                 const query = search || text;
-                const response = await axios.get(`https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(query)}&apiKey=${config.apiKzm}`);
+                const response = await axios.get(`https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(query)}&apiKey=kzm-YjSNMaIR-dJPiYORN`);
                 const res = response.data;
 
                 if (!res.status || !res.data || res.data.length === 0) {
@@ -35,7 +35,7 @@ const aiCommand = {
                 }, { quoted: m });
 
             } else {
-                const response = await axios.get(`https://${config.kzmUrl}/api/ai/chatgpt?apiKey=${config.apiKzm}&text=${encodeURIComponent(text)}&cookie=Cokie`);
+                const response = await axios.get(`https://${config.kzmUrl}/api/ai/chatgpt?apiKey=kzm-YjSNMaIR-dJPiYORN&text=${encodeURIComponent(text)}&cookie=Cokie`);
                 const res = response.data;
 
                 if (!res.status || !res.data) {
