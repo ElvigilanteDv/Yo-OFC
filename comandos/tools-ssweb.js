@@ -21,7 +21,7 @@ const sswebDownload = {
 
             await conn.sendMessage(m.chat, { 
                 image: { url: ssUrl }, 
-                caption: `*${config.visuals.emoji3} Screenshot Web (Mobile View)*\n\n🌐 *URL:* ${link}` 
+                caption: `*${config.visuals.emoji3} Screenshot Web*\n\n🌐 *URL:* ${link}` 
             }, { quoted: m });
 
             await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
