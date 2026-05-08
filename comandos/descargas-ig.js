@@ -9,10 +9,14 @@ const instagramDownload = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        const urlMatch = text?.match(/https?:\/\/(www\.)?instagram\.com\/[^\s]+/gi);
+        const urlMatch = text?.match(/https?:\/\/[^\s]+/gi);
         const link = urlMatch ? urlMatch[0] : null;
 
-        if (!link) return m.reply(`*${config.visuals.emoji2}* Ingresa un enlace de Instagram para descargar.`);
+        if (!link) return m.reply(`*${config.visuals.emoji2}* Por favor, proporciona un enlace para procesar la descarga.`);
+
+        if (!link.includes('instagram.com')) {
+            return m.reply(`*${config.visuals.emoji2}* El enlace proporcionado no pertenece a Instagram. Por favor, verifica la URL.`);
+        }
 
         await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
@@ -21,7 +25,7 @@ const instagramDownload = {
 
             if (!res.status || !res.data || res.data.length === 0) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('Contenido no encontrado o el enlace es privado.');
+                return m.reply('No se pudo encontrar contenido en este enlace.');
             }
 
             const mediaUrl = res.data[0].url;
