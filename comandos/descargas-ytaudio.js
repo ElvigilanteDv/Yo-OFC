@@ -5,7 +5,7 @@ const youtubeAudio = {
     name: 'play',
     alias: ['audio', 'yta'],
     category: 'descargas',
-    desc: 'Busca y descarga el audio de un video de YouTube.',
+    desc: 'Busca, muestra info y descarga el audio de YouTube.',
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
@@ -18,27 +18,33 @@ const youtubeAudio = {
 
             if (!searchRes.status || !searchRes.result || searchRes.result.length === 0) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('No se encontraron resultados para tu búsqueda.');
+                return m.reply('No se encontraron resultados.');
             }
 
             const firstResult = searchRes.result[0];
             const videoUrl = firstResult.url;
 
-            await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
+            const infoText = `*${config.visuals.emoji3} YouTube Play*\n\n` +
+                             `*Título:* ${firstResult.title}\n` +
+                             `*Canal:* ${firstResult.channel}\n` +
+                             `*Publicado:* ${firstResult.publishedAt}\n` +
+                             `*Duración:* ${firstResult.duration}\n` +
+                             `*Vistas:* ${firstResult.views}\n\n` +
+                             `_Enviando audio, espera un momento..._`;
+
+            await conn.sendMessage(m.chat, { 
+                image: { url: firstResult.thumbnail }, 
+                caption: infoText 
+            }, { quoted: m });
 
             const { data: audioRes } = await axios.get(`https://${config.kzmUrl}/api/download/ytaudio?url=${videoUrl}&apiKey=${config.apiKzm}`);
 
             if (!audioRes.status || !audioRes.result) {
                 await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-                return m.reply('Error al obtener el audio del servidor.');
+                return m.reply('Error al obtener el audio.');
             }
 
             const audioData = audioRes.result;
-            const caption = `*${config.visuals.emoji3} YouTube Audio*\n\n` +
-                            `*Título:* ${firstResult.title}\n` +
-                            `*Canal:* ${firstResult.channel}\n` +
-                            `*Duración:* ${firstResult.duration}\n` +
-                            `*Vistas:* ${firstResult.views}`;
 
             await conn.sendMessage(m.chat, { 
                 audio: { url: audioData.download_url }, 
