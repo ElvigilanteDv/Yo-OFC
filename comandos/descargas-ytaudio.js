@@ -23,7 +23,7 @@ const youtubeAudio = {
 
             const firstResult = searchRes.result[0];
             const videoUrl = firstResult.url;
-            const durationStr = firstResult.duration;
+            const durationStr = firstResult.duration; // Ejemplo: "35:51" o "05:20"
 
             const parts = durationStr.split(':').map(Number);
             let totalMinutes = 0;
@@ -60,10 +60,12 @@ const youtubeAudio = {
                 return m.reply('Error al obtener el audio.');
             }
 
+            const audioData = audioRes.result;
+
             await conn.sendMessage(m.chat, { 
-                audio: { url: audioRes.result.download_url }, 
+                audio: { url: audioData.download_url }, 
                 mimetype: 'audio/mp4', 
-                fileName: `${audioRes.result.title}.mp3` 
+                fileName: `${audioData.title}.mp3` 
             }, { quoted: m });
 
             await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
@@ -74,3 +76,5 @@ const youtubeAudio = {
         }
     }
 };
+
+export default youtubeAudio;
