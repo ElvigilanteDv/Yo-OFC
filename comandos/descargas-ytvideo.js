@@ -2,7 +2,7 @@ import { config } from '../config.js';
 import axios from 'axios';
 
 const youtubeVideo = {
-    name: 'video',
+    name: 'play2',
     alias: ['ytv', 'playvid'],
     category: 'descargas',
     desc: 'Busca, muestra info y descarga el video de YouTube.',
