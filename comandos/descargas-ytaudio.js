@@ -1,3 +1,4 @@
+
 import { config } from '../config.js';
 import axios from 'axios';
 
@@ -23,7 +24,7 @@ const youtubeAudio = {
 
             const firstResult = searchRes.result[0];
             const videoUrl = firstResult.url;
-            const durationStr = firstResult.duration; // Ejemplo: "35:51" o "05:20"
+            const durationStr = firstResult.duration;
 
             const parts = durationStr.split(':').map(Number);
             let totalMinutes = 0;
@@ -34,9 +35,9 @@ const youtubeAudio = {
                 totalMinutes = parts[0];
             }
 
-            if (totalMinutes >= 35) {
+            if (totalMinutes >= 45) {
                 await conn.sendMessage(m.chat, { react: { text: '⚠️', key: m.key } });
-                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 35 minutos.`);
+                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 45 minutos.`);
             }
 
             const infoText = `*${config.visuals.emoji3} YouTube Play ${config.visuals.emoji3}*\n\n` +
@@ -60,12 +61,10 @@ const youtubeAudio = {
                 return m.reply('Error al obtener el audio.');
             }
 
-            const audioData = audioRes.result;
-
             await conn.sendMessage(m.chat, { 
-                audio: { url: audioData.download_url }, 
+                audio: { url: audioRes.result.download_url }, 
                 mimetype: 'audio/mp4', 
-                fileName: `${audioData.title}.mp3` 
+                fileName: `${audioRes.result.title}.mp3` 
             }, { quoted: m });
 
             await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
@@ -76,5 +75,3 @@ const youtubeAudio = {
         }
     }
 };
-
-export default youtubeAudio;
