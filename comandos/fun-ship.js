@@ -23,7 +23,7 @@ const shipCommand = {
         const tag1 = user1.split('@')[0].split(':')[0];
         const tag2 = user2.split('@')[0].split(':')[0];
 
-        const caption = `*${config.visuals.emoji3} LA PAREJA DEL DÍA *\n\n@${tag1} ❤️ @${tag2}\n\n¡Hacen una pareja increíble! 🥂`;
+        const caption = `*${config.visuals.emoji3} LA PAREJA DEL DÍA ${config.visuals.emoji3}*\n\n@${tag1} ❤️ @${tag2}\n\n¡Hacen una pareja increíble! 🥂`;
 
         await conn.sendMessage(m.chat, { 
             text: caption,
