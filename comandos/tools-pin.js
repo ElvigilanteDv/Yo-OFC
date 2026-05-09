@@ -16,7 +16,7 @@ const pinterestCommand = {
 
             await conn.sendMessage(m.chat, { react: { text: '⌛', key: m.key } });
 
-            const apiUrl = `https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(text)}&apiKey=${config.apiKzm}`;
+            const apiUrl = `https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(text)}&apiKey=kzm-OifUrFOl-oSSLeonc`;
 
             const response = await axios.get(apiUrl);
             const res = response.data;
