@@ -27,6 +27,7 @@ const hugAction = {
         await conn.sendMessage(m.chat, { 
             video: { url: randomVideo }, 
             caption: caption,
+            gifPlayback: true,
             mentions: [m.sender, cleanTargetJid]
         }, { quoted: m });
     }
