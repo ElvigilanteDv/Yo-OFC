@@ -19,7 +19,7 @@ const formarpareja = {
         const u2 = shuffle[1];
 
         const frase = frasesParejas[Math.floor(Math.random() * frasesParejas.length)];
-        const caption = `*${config.visuals.emoji3} PAREJA FORMADA *\n\n@${u1.split('@')[0]} ❤️ @${u2.split('@')[0]}\n\n> ${frase}`;
+        const caption = `*${config.visuals.emoji3} PAREJA FORMADA ${config.visuals.emoji3}*\n\n@${u1.split('@')[0]} ❤️ @${u2.split('@')[0]}\n\n> ${frase}`;
 
         await conn.sendMessage(m.chat, { 
             text: caption, 
