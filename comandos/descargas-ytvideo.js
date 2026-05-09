@@ -36,7 +36,7 @@ const youtubeVideo = {
 
             if (totalMinutes >= 45) {
                 await conn.sendMessage(m.chat, { react: { text: '⚠️', key: m.key } });
-                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 35 minutos.`);
+                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 45 minutos.`);
             }
 
             const infoText = `*${config.visuals.emoji3} YouTube Video ${config.visuals.emoji3}*\n\n` +
