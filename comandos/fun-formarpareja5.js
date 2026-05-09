@@ -16,7 +16,7 @@ const formarpareja5 = {
 
         const shuffle = participants.sort(() => 0.5 - Math.random());
         let mentions = [];
-        let text = `*${config.visuals.emoji3} LAS 5 PAREJAS DEL GRUPO *\n\n`;
+        let text = `*${config.visuals.emoji3} LAS 5 PAREJAS DEL GRUPO ${config.visuals.emoji3}*\n\n`;
 
         for (let i = 0; i < 5; i++) {
             const u1 = shuffle[i * 2];
