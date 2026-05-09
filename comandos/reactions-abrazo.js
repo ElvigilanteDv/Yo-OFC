@@ -13,7 +13,12 @@ const hugAction = {
         if (!who) return m.reply(`*${config.visuals.emoji2}* Etiqueta a alguien o responde a su mensaje para darle un abrazo.`);
 
         const videos = [
-            'https://upload.yotsuba.giize.com/u/C8RnTJNA.mp4'
+            'https://upload.yotsuba.giize.com/u/C8RnTJNA.mp4',
+            'https://upload.yotsuba.giize.com/u/krwP-k7h.mp4',
+            'https://upload.yotsuba.giize.com/u/G71UkDzC.mp4',
+            'https://upload.yotsuba.giize.com/u/6tw0Lt_B.mp4',
+            'https://upload.yotsuba.giize.com/u/nr4u2rGw.mp4',
+            'https://upload.yotsuba.giize.com/u/vLU4a1Ik.mp4'
         ];
 
         const randomVideo = videos[Math.floor(Math.random() * videos.length)];
