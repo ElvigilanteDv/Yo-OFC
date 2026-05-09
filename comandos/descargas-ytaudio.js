@@ -23,13 +23,29 @@ const youtubeAudio = {
 
             const firstResult = searchRes.result[0];
             const videoUrl = firstResult.url;
+            const durationStr = firstResult.duration; // Ejemplo: "35:51" o "05:20"
+
+            const parts = durationStr.split(':').map(Number);
+            let totalMinutes = 0;
+
+            if (parts.length === 3) {
+                totalMinutes = (parts[0] * 60) + parts[1];
+            } else if (parts.length === 2) {
+                totalMinutes = parts[0];
+            }
+
+            if (totalMinutes >= 35) {
+                await conn.sendMessage(m.chat, { react: { text: '⚠️', key: m.key } });
+                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 35 minutos.`);
+            }
 
             const infoText = `*${config.visuals.emoji3} YouTube Play ${config.visuals.emoji3}*\n\n` +
                              `*= Título* »\n> ${firstResult.title}\n` +
                              `*= Canal* »\n> ${firstResult.channel}\n` +
                              `*= Publicado* »\n> ${firstResult.publishedAt}\n` +
                              `*= Duración* »\n> ${firstResult.duration}\n` +
-                             `*= Vistas* »\n> ${firstResult.views}\n\n` +
+                             `*= Vistas* »\n> ${firstResult.views}\n` +
+                             `*= Enlace* »\n> ${videoUrl}\n\n` +
                              `_Enviando audio, espera un momento..._`;
 
             await conn.sendMessage(m.chat, { 
