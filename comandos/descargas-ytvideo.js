@@ -1,3 +1,6 @@
+import { config } from '../config.js';
+import axios from 'axios';
+
 const youtubeVideo = {
     name: 'play2',
     alias: ['ytv', 'playvid'],
@@ -33,7 +36,7 @@ const youtubeVideo = {
 
             if (totalMinutes >= 45) {
                 await conn.sendMessage(m.chat, { react: { text: '⚠️', key: m.key } });
-                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 45 minutos.`);
+                return m.reply(`*${config.visuals.emoji2}* El video es demasiado largo. El límite permitido es de 35 minutos.`);
             }
 
             const infoText = `*${config.visuals.emoji3} YouTube Video ${config.visuals.emoji3}*\n\n` +
@@ -57,9 +60,11 @@ const youtubeVideo = {
                 return m.reply('Error al obtener el video del servidor.');
             }
 
+            const videoData = videoRes.result;
+
             await conn.sendMessage(m.chat, { 
-                video: { url: videoRes.result.download_url }, 
-                caption: `*${config.visuals.emoji3} ${videoRes.result.title}*`,
+                video: { url: videoData.download_url }, 
+                caption: `*${config.visuals.emoji3} ${videoData.title}*`,
                 mimetype: 'video/mp4'
             }, { quoted: m });
 
@@ -72,4 +77,4 @@ const youtubeVideo = {
     }
 };
 
-export { youtubeAudio, youtubeVideo };
+export default youtubeVideo;
