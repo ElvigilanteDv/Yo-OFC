@@ -23,7 +23,7 @@ const loveCommand = {
         else if (lovePercentage >= 20) message = 'Podría funcionar, tal vez... 🤔';
         else message = 'Mejor queden como amigos. 🧊';
 
-        const caption = `*${config.visuals.emoji3} MEDIDOR DE AMOR *\n\n*De:* @${sender}\n*Para:* @${target}\n\nEl nivel de amor es del *${lovePercentage}%*\n\n> ${message}`;
+        const caption = `*${config.visuals.emoji3} MEDIDOR DE AMOR ${config.visuals.emoji3}*\n\n*De:* @${sender}\n*Para:* @${target}\n\nEl nivel de amor es del *${lovePercentage}%*\n\n> ${message}`;
 
         await conn.sendMessage(m.chat, { 
             text: caption,
