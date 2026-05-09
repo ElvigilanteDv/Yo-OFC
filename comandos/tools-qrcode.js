@@ -15,7 +15,7 @@ const qrcodeCommand = {
                 return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa el texto que deseas convertir a QR.\n\nEjemplo:\n*${usedPrefix}${commandName}* https://github.com/Dev-FelixOfc`);
             }
 
-            const apiUrl = `https://${config.kzmUrl}/api/tools/qr?text=${encodeURIComponent(text)}&apiKey=${config.apiKzm}`;
+            const apiUrl = `https://${config.kzmUrl}/api/tools/qr?text=${encodeURIComponent(text)}&apiKey=kzm-OifUrFOl-oSSLeonc`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: apiUrl }, 
