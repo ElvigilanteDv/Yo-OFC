@@ -8,7 +8,7 @@ const hugAction = {
     noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
-        const who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : null;
+        let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : null;
 
         if (!who) return m.reply(`*${config.visuals.emoji2}* Etiqueta a alguien o responde a su mensaje para darle un abrazo.`);
 
@@ -17,16 +17,17 @@ const hugAction = {
         ];
 
         const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-        
-        const mentionUser = m.sender.split('@')[0];
-        const targetUser = who.split('@')[0];
-        
-        const caption = `*${config.visuals.emoji3}* @${mentionUser} está abrazando a @${targetUser}`;
+
+        const sender = m.sender.split('@')[0].split(':')[0];
+        const receiver = who.split('@')[0].split(':')[0];
+        const cleanTargetJid = receiver + '@s.whatsapp.net';
+
+        const caption = `*${config.visuals.emoji3}* @${sender} está abrazando a @${receiver}`;
 
         await conn.sendMessage(m.chat, { 
             video: { url: randomVideo }, 
             caption: caption,
-            mentions: [m.sender, who]
+            mentions: [m.sender, cleanTargetJid]
         }, { quoted: m });
     }
 };
