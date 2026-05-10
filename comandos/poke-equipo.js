@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const dbPath = path.resolve('./config/database/pokemon/pokemon.json');
+const groupDbPath = path.resolve('./jsons/grupos.json');
 
 const teamCommand = {
     name: 'equipo',
@@ -16,6 +17,11 @@ const teamCommand = {
         try {
             const from = m.chat;
             const sender = m.sender.split('@')[0].split(':')[0];
+
+            let groupDb = JSON.parse(fs.readFileSync(groupDbPath, 'utf-8'));
+            if (!groupDb[from]?.pokemon) {
+                return m.reply(`*${config.visuals.emoji2}* \`SISTEMA DESACTIVADO\`\n\nEl juego de Pokémon está desactivado en este grupo.`);
+            }
 
             if (!fs.existsSync(dbPath)) return m.reply(`*${config.visuals.emoji2}* No tienes datos registrados.`);
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
