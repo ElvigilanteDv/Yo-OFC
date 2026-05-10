@@ -31,7 +31,7 @@ const teamCommand = {
             }
 
             let user = db[from].users[sender];
-            let txt = `*${config.visuals.emoji3}* \`EQUIPO DE @${sender}\`\n\n`;
+            let txt = `*${config.visuals.emoji3}* \`POKEMONS DEL USUARIO\`\n› @${sender}\n\n`;
 
             user.pc.slice(0, 6).forEach((pk, i) => {
                 let xpNext = Math.pow(pk.lvl + 1, 3);
