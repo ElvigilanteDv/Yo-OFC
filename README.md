@@ -21,58 +21,15 @@
 
 ### 📱 Termux / VPS / Actualizar
 
-1. Dar permisos de almacenamiento (Acepta el mensaje que saldrá en pantalla)
+1. Instalar lo esencial de termux y permitir que el bot se encargue de instalar y hacer todo solo.
+
 ```bash
-termux-setup-storage
+pkg update && pkg upgrade -y && pkg install -y git nodejs ffmpeg imagemagick && git clone https://github.com/Dev-FelixOfc/Kazuma-Mr-Bot && cd Kazuma-Mr-Bot && chmod +x install.sh && ./install.sh
 ```
-
-2. Actualizar los paquetes del sistema
-
-```bash
-pkg update && pkg upgrade -y
-```
-
-3. Instalar las herramientas necesarias (Git y Node.js)
+2. Escribe tu número en la terminal para encender el bot.
 
 ```bash
-pkg install git nodejs -y
-```
-
-4. Clonar el repositorio git
-
-```bash
-git clone https://github.com/Dev-FelixOfc/Kazuma-Mr-Bot
-```
-
-5. Entrar a la carpeta del proyecto
-
-```bash
-cd Kazuma-Mr-Bot
-```
-
-6. Instalar las dependencias del bot
-
-```bash
-npm install
-```
-
-7. Iniciar el bot por primera vez
-
-```bash
-npm start
-```
-
-# Para Actualizar en el futuro
-```bash
-git pull
-```
-
-```bash
-npm install
-```
-
-```bash
-npm start
+Ejemplo: 18095091237
 ```
 
 ---
