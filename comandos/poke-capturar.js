@@ -27,11 +27,11 @@ const catchPokemon = {
                 return m.reply(`*${config.visuals.emoji2}* El pokémon se cansó de esperar y se fue.`);
             }
 
-            if (!db[from].users[sender]) db[from].users[sender] = { pc: [], stats: { catch: 0 } };
+            if (!db[from].users[sender]) db[from].users[sender] = { pc: [], stats: { catch: 0 }, cooldowns: {} };
             let user = db[from].users[sender];
 
             let success = Math.random() < 0.7; 
-            
+
             if (!success) {
                 return m.reply(`*${config.visuals.emoji2}* ¡Se salió de la Pokéball! Intenta capturarlo de nuevo rápido.`);
             }
@@ -47,6 +47,10 @@ const catchPokemon = {
             user.pc.push(newPoke);
             user.stats = user.stats || {};
             user.stats.catch = (user.stats.catch || 0) + 1;
+            
+            user.cooldowns = user.cooldowns || {};
+            user.cooldowns.search = Date.now();
+            
             db[from].session = null;
 
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
