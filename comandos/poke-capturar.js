@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const dbPath = path.resolve('./config/database/pokemon/pokemon.json');
+const groupDbPath = path.resolve('./jsons/grupos.json');
 
 const catchPokemon = {
     name: 'capturar',
@@ -17,14 +18,19 @@ const catchPokemon = {
             const from = m.chat;
             const sender = m.sender.split('@')[0].split(':')[0];
 
+            let groupDb = JSON.parse(fs.readFileSync(groupDbPath, 'utf-8'));
+            if (!groupDb[from]?.pokemon) {
+                return m.reply(`*${config.visuals.emoji2}* \`SISTEMA DESACTIVADO\`\n\nEl juego de Pokémon está desactivado en este grupo.`);
+            }
+
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-            if (!db[from]?.session) return m.reply(`*${config.visuals.emoji2}* No hay ningún pokémon cerca. ¡Usa #explorar primero!`);
+            if (!db[from]?.session) return m.reply(`*${config.visuals.emoji2}* No hay ningún pokémon cerca.`);
 
             let session = db[from].session;
             if (Date.now() > session.expire) {
                 db[from].session = null;
                 fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-                return m.reply(`*${config.visuals.emoji2}* El pokémon se cansó de esperar y se fue.`);
+                return m.reply(`*${config.visuals.emoji2}* El pokémon se ha ido.`);
             }
 
             if (!db[from].users[sender]) db[from].users[sender] = { pc: [], stats: { catch: 0 }, cooldowns: {} };
@@ -33,7 +39,7 @@ const catchPokemon = {
             let success = Math.random() < 0.7; 
 
             if (!success) {
-                return m.reply(`*${config.visuals.emoji2}* ¡Se salió de la Pokéball! Intenta capturarlo de nuevo rápido.`);
+                return m.reply(`*${config.visuals.emoji2}* ¡Se salió de la Pokéball! Intenta de nuevo.`);
             }
 
             let newPoke = {
@@ -47,12 +53,10 @@ const catchPokemon = {
             user.pc.push(newPoke);
             user.stats = user.stats || {};
             user.stats.catch = (user.stats.catch || 0) + 1;
-            
             user.cooldowns = user.cooldowns || {};
             user.cooldowns.search = Date.now();
             
             db[from].session = null;
-
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 
             await conn.sendMessage(from, { 
