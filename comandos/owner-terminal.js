@@ -12,14 +12,17 @@ const terminalCommand = {
     isOwner: true,
     noPrefix: true,
 
-    run: async (conn, m, { args, text }) => {
-        const from = m.key.remoteJid;
+    run: async (conn, m, args) => {
+        const from = m.chat;
+        
+        const text = args.join(' ');
 
-        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingresa el comando a ejecutar.`);
+        if (!text) return m.reply(`*${config.visuals.emoji2}* Ingrese el comando a ejecutar.`);
 
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
+            
             if (senderNumber !== realOwnerNumber) {
                 return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\``);
             }
@@ -27,22 +30,22 @@ const terminalCommand = {
             await conn.sendMessage(from, { react: { text: '💻', key: m.key } });
 
             const { stdout, stderr } = await execPromise(text);
-            let response = stdout || stderr;
+            let response = stdout || stderr || 'Comando ejecutado (sin salida).';
 
-            if (text.includes('rm ') || text.includes('rmdir ')) {
+            if (text.includes('rm ')) {
                 const parts = text.split(' ');
                 const target = parts[parts.length - 1];
 
                 try {
                     await execPromise(`git checkout HEAD -- ${target}`);
-                    response += `\n\n♻️ *Restauración:* El objetivo \`${target}\` ha sido restaurado desde el repositorio.`;
+                    response += `\n\n♻️ *Restauración:* \`${target}\` restaurado desde el repo.`;
                 } catch (gitErr) {
-                    response += `\n\n⚠️ *Nota:* No se pudo restaurar \`${target}\` (posiblemente no está en el repositorio).`;
+                    response += `\n\n⚠️ *Nota:* No se pudo restaurar \`${target}\`.`;
                 }
             }
 
             await conn.sendMessage(from, { 
-                text: `*» RESULTADO TERMINAL «*\n\n\`\`\`${response.trim()}\`\`\`` 
+                text: `*» RESULTADO «*\n\n\`\`\`${response.trim()}\`\`\`` 
             }, { quoted: m });
 
             await conn.sendMessage(from, { react: { text: '✅', key: m.key } });
@@ -50,7 +53,7 @@ const terminalCommand = {
         } catch (error) {
             await conn.sendMessage(from, { react: { text: '❌', key: m.key } });
             await conn.sendMessage(from, { 
-                text: `❌ *Error de ejecución:* \n\n\`\`\`${error.message}\`\`\`` 
+                text: `❌ *Error:* \n\n\`\`\`${error.message}\`\`\`` 
             }, { quoted: m });
         }
     }
