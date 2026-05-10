@@ -31,10 +31,12 @@ const removeCoins = {
 
             const user = targetJid.split('@')[0].split(':')[0];
             const cleanTargetJid = user + '@s.whatsapp.net';
-            const montoAQuitar = parseInt(args.find(arg => !isNaN(arg) && !arg.includes('@')));
+            
+            const isAll = args.some(arg => arg.toLowerCase() === 'all' || arg.toLowerCase() === 'todo');
+            const montoInput = parseInt(args.find(arg => !isNaN(arg) && !arg.includes('@')));
 
-            if (!montoAQuitar || montoAQuitar <= 0) {
-                return m.reply(`*${config.visuals.emoji2}* \`Monto Inválido\`\n\nIngresa una cantidad válida.`);
+            if (!isAll && (!montoInput || montoInput <= 0)) {
+                return m.reply(`*${config.visuals.emoji2}* \`Monto Inválido\`\n\nIngresa una cantidad válida o escribe *all* para quitar todo.`);
             }
 
             if (!fs.existsSync(economyPath)) return m.reply(`*${config.visuals.emoji2}* Base de datos no encontrada.`);
@@ -49,24 +51,30 @@ const removeCoins = {
             let totalDisponible = wallet + bank;
             let retiradoReal = 0;
 
-            if (totalDisponible < montoAQuitar) {
+            if (isAll) {
                 retiradoReal = totalDisponible;
                 wallet = 0;
                 bank = 0;
             } else {
-                retiradoReal = montoAQuitar;
-                let restante = montoAQuitar;
-
-                if (wallet >= restante) {
-                    wallet -= restante;
-                    restante = 0;
-                } else {
-                    restante -= wallet;
+                if (totalDisponible < montoInput) {
+                    retiradoReal = totalDisponible;
                     wallet = 0;
-                }
+                    bank = 0;
+                } else {
+                    retiradoReal = montoInput;
+                    let restante = montoInput;
 
-                if (restante > 0) {
-                    bank -= restante;
+                    if (wallet >= restante) {
+                        wallet -= restante;
+                        restante = 0;
+                    } else {
+                        restante -= wallet;
+                        wallet = 0;
+                    }
+
+                    if (restante > 0) {
+                        bank -= restante;
+                    }
                 }
             }
 
@@ -75,7 +83,7 @@ const removeCoins = {
 
             fs.writeFileSync(economyPath, JSON.stringify(ecoDb, null, 2), 'utf-8');
 
-            const texto = `*${config.visuals.emoji3}* \`SANCIÓN ECONÓMICA\` *${config.visuals.emoji3}*\n\n*❁ Usuario:* @${user}\n*❁ Monto Retirado:* \`¥${retiradoReal.toLocaleString()}\`\n\n*${config.visuals.emoji} Cartera Restante:* ¥${wallet.toLocaleString()}\n*${config.visuals.emoji4} Banco Restante:* ¥${bank.toLocaleString()}\n\n> Los fondos han sido procesados correctamente.`;
+            const texto = `*${config.visuals.emoji3}* \`SANCIÓN ECONÓMICA\` *${config.visuals.emoji3}*\n\n*❁ Usuario:* @${user}\n*❁ Monto Retirado:* \`¥${retiradoReal.toLocaleString()}\` ${isAll ? '*(TODO)*' : ''}\n\n*${config.visuals.emoji} Cartera Restante:* ¥${wallet.toLocaleString()}\n*${config.visuals.emoji4} Banco Restante:* ¥${bank.toLocaleString()}\n\n> Los fondos han sido procesados correctamente.`;
 
             await conn.sendMessage(m.chat, { 
                 text: texto, 
