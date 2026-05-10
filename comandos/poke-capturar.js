@@ -8,9 +8,7 @@ const catchPokemon = {
     name: 'capturar',
     alias: ['catch', 'poke'],
     category: 'pokemon',
-    desc: 'Intenta capturar al pokémon actual.',
-    isOwner: false,
-    isAdmin: false,
+    desc: 'Intenta capturar al pokémon detectado.',
     isGroup: true,
     noPrefix: true,
 
@@ -19,28 +17,23 @@ const catchPokemon = {
             const from = m.chat;
             const sender = m.sender.split('@')[0].split(':')[0];
 
-            if (!fs.existsSync(dbPath)) return m.reply(`*${config.visuals.emoji2}* Error: DB no encontrada.`);
             let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-
-            if (!db[from] || !db[from].session) return m.reply(`*${config.visuals.emoji2}* No hay pokémon para capturar.`);
+            if (!db[from]?.session) return m.reply(`*${config.visuals.emoji2}* No hay ningún pokémon cerca. ¡Usa #explorar primero!`);
 
             let session = db[from].session;
             if (Date.now() > session.expire) {
                 db[from].session = null;
                 fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-                return m.reply(`*${config.visuals.emoji2}* El pokémon ha huido.`);
+                return m.reply(`*${config.visuals.emoji2}* El pokémon se cansó de esperar y se fue.`);
             }
 
-            if (!db[from].users[sender]) db[from].users[sender] = { pc: [], cooldowns: {}, stats: { catch: 0 } };
+            if (!db[from].users[sender]) db[from].users[sender] = { pc: [], stats: { catch: 0 } };
             let user = db[from].users[sender];
 
-            if (user.pc.length >= 56) return m.reply(`*${config.visuals.emoji2}* No tienes espacio en tu equipo ni en la caja.`);
-
-            let success = Math.random() < 0.5;
+            let success = Math.random() < 0.7; 
+            
             if (!success) {
-                db[from].session = null;
-                fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-                return m.reply(`*${config.visuals.emoji2}* ¡Se escapó! El pokémon huyó de la zona.`);
+                return m.reply(`*${config.visuals.emoji2}* ¡Se salió de la Pokéball! Intenta capturarlo de nuevo rápido.`);
             }
 
             let newPoke = {
@@ -52,17 +45,17 @@ const catchPokemon = {
             };
 
             user.pc.push(newPoke);
+            user.stats = user.stats || {};
             user.stats.catch = (user.stats.catch || 0) + 1;
             db[from].session = null;
 
             fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 
             await conn.sendMessage(from, { 
-                text: `*${config.visuals.emoji3}* \`CAPTURA EXITOSA\`\n\nHas atrapado un pokémon nivel ${newPoke.lvl}.\n¡Se ha guardado en tu PC!` 
+                text: `*${config.visuals.emoji3}* \`¡ATRÁPALO YA!\`\n\nHas capturado exitosamente al pokémon nivel ${newPoke.lvl}.\n\n> Revisa tu equipo con *#equipo*` 
             }, { quoted: m });
         } catch (e) {
-            console.error(e);
-            m.reply(`*${config.visuals.emoji2}* Error al lanzar la pokéball.`);
+            m.reply(`*${config.visuals.emoji2}* La Pokéball falló.`);
         }
     }
 };
