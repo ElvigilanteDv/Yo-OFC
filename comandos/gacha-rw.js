@@ -39,28 +39,23 @@ const rwCommand = {
                 fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
             }
 
-            let allIds = Object.keys(gachaDB[group]);
-            let libresNoSimpson = allIds.filter(id => 
-                gachaDB[group][id].status === 'libre' && 
-                !gachaDB[group][id].source.toLowerCase().includes('simpson')
-            );
+            const currentGroupData = gachaDB[group];
+            const allIds = Object.keys(currentGroupData);
+            
+            const esDomadoRoll = Math.random() < 0.01;
+            let pool = [];
 
-            let simpsonsLibres = allIds.filter(id => 
-                gachaDB[group][id].status === 'libre' && 
-                gachaDB[group][id].source.toLowerCase().includes('simpson')
-            );
-
-            let keys;
-            if (libresNoSimpson.length > 0) {
-                keys = libresNoSimpson;
-            } else if (simpsonsLibres.length > 0) {
-                keys = simpsonsLibres;
-            } else {
-                keys = allIds;
+            if (esDomadoRoll) {
+                pool = allIds.filter(id => currentGroupData[id].status === 'domado' || currentGroupData[id].owner !== null);
             }
 
-            const randomId = keys[Math.floor(Math.random() * keys.length)];
-            const pj = gachaDB[group][randomId];
+            if (pool.length === 0) {
+                pool = allIds.filter(id => currentGroupData[id].status === 'libre');
+                if (pool.length === 0) pool = allIds;
+            }
+
+            const randomId = pool[Math.floor(Math.random() * pool.length)];
+            const pj = currentGroupData[randomId];
 
             let caption = `*» (❍ᴥ❍ʋ) \`GACHA ROLL\` «*\n\n`;
             caption += `*Nombre:* ${pj.name}\n`;
