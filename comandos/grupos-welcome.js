@@ -8,10 +8,10 @@ export default async (conn) => {
     conn.ev.on('group-participants.update', async (anu) => {
         try {
             const { id, participants, action } = anu;
-            
+
             if (!fs.existsSync(groupDbPath)) return;
             const groupDb = JSON.parse(fs.readFileSync(groupDbPath, 'utf-8'));
-            
+
             const chatConfig = groupDb[id];
             if (!chatConfig || !chatConfig.welcome) return;
 
