@@ -23,7 +23,7 @@ import { pixelHandler } from './pixel.js';
 
 import { detectHandler } from './comandos/grupos-detect.js';
 import antiLinkHandler from './comandos/grupos-antilink.js';
-import { welcomeHandler } from './funciones/welcomeHandler.js';
+import { welcomeHandler } from './comandos/grupos-welcome.js';
 import { loadAllSubBots } from './sockets/index.js';
 import { loadAllMoodBots } from './sockets/SubMoods/index.js';
 
