@@ -23,7 +23,7 @@ import { pixelHandler } from './pixel.js';
 
 import { detectHandler } from './comandos/grupos-detect.js';
 import antiLinkHandler from './comandos/grupos-antilink.js';
-import { welcomeHandler } from './comandos/grupos-welcome.js';
+import welcomeHandler from './comandos/grupos-welcome.js';
 import { loadAllSubBots } from './sockets/index.js';
 import { loadAllMoodBots } from './sockets/SubMoods/index.js';
 
@@ -100,6 +100,7 @@ async function startBot() {
 
     try {
         detectHandler(conn);
+        welcomeHandler(conn);
     } catch (e) {}
 
     if (!conn.authState.creds.registered) {
@@ -117,10 +118,6 @@ async function startBot() {
     }
 
     conn.ev.on('creds.update', saveCreds);
-
-    conn.ev.on('group-participants.update', async (anu) => {
-        await welcomeHandler(conn, anu);
-    });
 
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
