@@ -33,7 +33,7 @@ export default async (conn) => {
 *USUARIO:* @${phone}
 *GRUPO:* ${metadata.subject}
 
-¡Hola! Te damos la bienvenida a nuestra base. Disfruta de tu estancia y no olvides respetar los protocolos del grupo.
+¡Hola! Te damos la bienvenida a nuestro grupo. Disfruta de tu estancia y no olvides respetar los protocolos del grupo.
 
 > *Escribe #menu para ver mis comandos.*
 > *Actualmente somos ${metadata.participants.length} en el sector.*`;
