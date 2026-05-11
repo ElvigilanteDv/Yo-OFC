@@ -8,7 +8,9 @@ export async function welcomeHandler(sock, { id, participants, action }) {
     if (action !== 'add') return;
 
     try {
+        if (!fs.existsSync(groupDbPath)) return;
         let groupDb = JSON.parse(fs.readFileSync(groupDbPath, 'utf-8'));
+        
         if (!groupDb[id]?.welcome) return;
 
         let groupMetadata = await sock.groupMetadata(id);
@@ -32,19 +34,10 @@ export async function welcomeHandler(sock, { id, participants, action }) {
             await sock.sendMessage(id, {
                 image: { url: pp },
                 caption: txt,
-                mentions: [jid],
-                contextInfo: {
-                    externalAdReply: {
-                        title: 'WELCOME SYSTEM',
-                        body: groupName,
-                        thumbnailUrl: pp,
-                        mediaType: 1,
-                        renderLargerThumbnail: true
-                    }
-                }
+                mentions: [jid]
             });
         }
     } catch (e) {
-        console.log('Error en Welcome Handler:', e);
+        console.error('Error en Welcome Handler:', e);
     }
 }
