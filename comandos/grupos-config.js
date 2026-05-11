@@ -6,7 +6,7 @@ const databasePath = path.resolve('./jsons/grupos.json');
 
 const configOnOff = {
     name: 'config',
-    alias: ['detect', 'antilink', 'pokemon'],
+    alias: ['detect', 'antilink', 'pokemon', 'welcome'],
     category: 'grupo',
     desc: 'Configura las funciones del grupo con on/off.',
     isAdmin: true,
@@ -26,9 +26,10 @@ const configOnOff = {
             action = args[0]?.toLowerCase();
         }
 
-        const validFeatures = ['detect', 'antilink', 'pokemon'];
+        const validFeatures = ['detect', 'antilink', 'pokemon', 'welcome'];
         if (!validFeatures.includes(feature)) {
-            return m.reply(`*${config.visuals.emoji2}* \`Opción Inválida\`\n\nFunciones disponibles:\n*${config.visuals.emoji3}* \`${usedPrefix}detect on/off\`\n*${config.visuals.emoji3}* \`${usedPrefix}antilink on/off\`\n*${config.visuals.emoji3}* \`${usedPrefix}pokemon on/off\``);
+            let list = validFeatures.map(f => `*${config.visuals.emoji3}* \`${usedPrefix}${f} on/off\``).join('\n');
+            return m.reply(`*${config.visuals.emoji2}* \`Opción Inválida\`\n\nFunciones disponibles:\n${list}`);
         }
 
         if (!action || !['on', 'off'].includes(action)) {
@@ -48,7 +49,12 @@ const configOnOff = {
             }
 
             if (!db[from]) {
-                db[from] = { detect: true, antilink: false, pokemon: false };
+                db[from] = { 
+                    detect: true, 
+                    antilink: false, 
+                    pokemon: false, 
+                    welcome: false 
+                };
             }
 
             if (db[from][feature] === enabled) {
