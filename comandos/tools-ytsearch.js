@@ -6,7 +6,7 @@ const youtubeSearch = {
     alias: ['yts', 'searchy'],
     category: 'tools',
     desc: 'Busca y muestra información de los 5 primeros resultados de YouTube.',
-    noPrefix: false,
+    noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
         const query = text || (m.quoted && m.quoted.text);
