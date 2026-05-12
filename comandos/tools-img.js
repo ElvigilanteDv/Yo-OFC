@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import axios from 'axios';
 
-const pinterestCommand = {
+const imgCommand = {
     name: 'img',
     alias: ['imagen', 'imgg'],
     category: 'descargas',
