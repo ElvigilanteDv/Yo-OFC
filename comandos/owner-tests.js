@@ -25,7 +25,6 @@ const mediaRivalCommand = {
  return m.reply('*¡Oh no!* No pude encontrar nada que esté a la altura de tus expectativas hoy.');
  }
 
- *Seleccionamos un elemento aleatorio para superar la linealidad del código original*
  const randomIndex = Math.floor(Math.random() * res.data.length);
  const selectedMedia = res.data[randomIndex].image_url;
  
