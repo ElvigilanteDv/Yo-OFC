@@ -6,7 +6,7 @@ const imgCommand = {
     alias: ['imagen', 'imgg'],
     category: 'descargas',
     desc: 'Busca y envía la primera imagen de Pinterest.',
-    noPrefix: false,
+    noPrefix: true,
 
     run: async (conn, m, args, usedPrefix, commandName, text) => {
         if (!text) return m.reply(`*${config.visuals.emoji2}* Por favor, ingresa un texto para generar tu imagen.`);
