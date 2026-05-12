@@ -6,7 +6,7 @@ const mediaRivalCommand = {
  alias: ['find', 'multimedia'],
  category: 'descargas',
  desc: 'El rival definitivo que busca imágenes aleatorias de alta calidad.',
- noPrefix: false,
+ noPrefix: true,
 
  run: async (conn, m, args, usedPrefix, commandName, text) => {
  if (!text) return m.reply('*¡Atención, Félix Manuel!* Necesito que me indiques qué buscar para demostrarte mi poder.');
