@@ -16,7 +16,7 @@ const unsellCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje.`);
@@ -26,16 +26,18 @@ const unsellCommand = {
             }
 
             const item = global.db.data.chats[group].shop[pjId];
-            const sellerJid = item.seller.includes('@') ? item.seller : `${item.seller}@s.whatsapp.net`;
+            const sellerJid = item.seller.replace(/:.*@/g, '@');
 
             if (sellerJid !== user) {
                 return m.reply(`*${config.visuals.emoji2}* No puedes retirar un personaje que no es tuyo.`);
             }
 
             if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
-            
-            global.db.data.chats[group].gacha[pjId].status = 'domado';
-            
+
+            if (global.db.data.chats[group].gacha[pjId]) {
+                global.db.data.chats[group].gacha[pjId].status = 'domado';
+            }
+
             delete global.db.data.chats[group].shop[pjId];
 
             m.reply(`*${config.visuals.emoji3}* Has retirado a *${item.name}* del mercado.\n\n> Vuelve a estar en tu inventario.`);
