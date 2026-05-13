@@ -1,9 +1,8 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 import { config } from '../config.js';
 
-const tarjetasPath = path.resolve('./config/database/economy/targets.json');
-const economyPath = path.resolve('./config/database/economy/economy.json');
+const targetsFolder = path.resolve('./jsons/targets');
 
 const claimCard = {
     name: 'target',
@@ -13,62 +12,43 @@ const claimCard = {
     isGroup: true,
     noPrefix: true,
 
-    run: async (conn, m, args, usedPrefix) => {
-        const group = m.chat;
-        const senderJid = m.sender.split('@')[0].split(':')[0];
-        const inputCode = args[0];
-
-        if (!inputCode) {
-            return m.reply(`*${config.visuals.emoji2}* \`Falta Código\` *${config.visuals.emoji2}*\n\nPor favor, ingresa el código de tu tarjeta.\n\n> Ejemplo: *${usedPrefix}target KZM-0000-XX*`);
-        }
-
-        if (!fs.existsSync(tarjetasPath)) {
-            return m.reply(`*${config.visuals.emoji2}* El sistema de tarjetas no está disponible.`);
-        }
-
-        if (!fs.existsSync(economyPath)) {
-            return m.reply(`*${config.visuals.emoji2}* El sistema de economía no está disponible.`);
-        }
-
+    run: async (conn, m, args) => {
         try {
-            let dbCards = JSON.parse(fs.readFileSync(tarjetasPath, 'utf-8'));
-            const cardIndex = dbCards.tarjetas.findIndex(t => t.codigo === inputCode);
+            const user = m.sender;
+            const inputCode = args[0];
 
-            if (cardIndex === -1) {
-                return m.reply(`*${config.visuals.emoji2}* \`Código Inválido\`\n\nEse código de tarjeta no existe.`);
+            if (!inputCode) {
+                return m.reply(`*${config.visuals.emoji2}* \`Falta Código\`\n\nPor favor, ingresa el código de tu tarjeta.\n\n> Ejemplo: #target KZM-XXXX`);
             }
 
-            const card = dbCards.tarjetas[cardIndex];
+            await fs.ensureDir(targetsFolder);
 
-            if (card.usada) {
-                return m.reply(`*${config.visuals.emoji2}* \`Tarjeta Agotada\`\n\nEsta tarjeta ya fue reclamada.`);
+            const cardPath = path.join(targetsFolder, `${inputCode}.json`);
+
+            if (!await fs.pathExists(cardPath)) {
+                return m.reply(`*${config.visuals.emoji2}* \`Código Inválido\`\n\nEsa tarjeta no existe o ya fue reclamada.`);
             }
 
-            let ecoDb = JSON.parse(fs.readFileSync(economyPath, 'utf-8'));
+            const cardData = await fs.readJson(cardPath);
+            const monto = Number(cardData.monto);
 
-            if (!ecoDb[group]) ecoDb[group] = {};
-            if (!ecoDb[group][senderJid]) {
-                ecoDb[group][senderJid] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
+            if (!global.db.data.users[user]) global.db.data.users[user] = { bank: 0 };
+            const userDb = global.db.data.users[user];
 
-            const montoFinal = Number(card.monto);
-            ecoDb[group][senderJid].bank = Number(ecoDb[group][senderJid].bank || 0) + montoFinal;
+            userDb.bank = (userDb.bank || 0) + monto;
 
-            dbCards.tarjetas[cardIndex].usada = true;
-            dbCards.tarjetas[cardIndex].reclamadaPor = senderJid;
-            dbCards.tarjetas[cardIndex].fechaReclamo = new Date().toISOString();
-            dbCards.tarjetas[cardIndex].grupoReclamo = group;
+            await fs.remove(cardPath);
 
-            fs.writeFileSync(economyPath, JSON.stringify(ecoDb, null, 2), 'utf-8');
-            fs.writeFileSync(tarjetasPath, JSON.stringify(dbCards, null, 2), 'utf-8');
+            let texto = `*${config.visuals.emoji3}* \`TARJETA RECLAMADA\` *${config.visuals.emoji3}*\n\n`;
+            texto += `*❁* Código: \`${inputCode}\`\n`;
+            texto += `*❁* Monto: \`¥${monto.toLocaleString()}\`\n\n`;
+            texto += `> El dinero ha sido depositado en tu **Banco**.`;
 
-            await conn.sendMessage(m.chat, { 
-                text: `*${config.visuals.emoji3}* \`TARJETA RECLAMADA\`\n\n*❁* Código: \`${card.codigo}\`\n*❁* Monto: \`¥${montoFinal.toLocaleString()}\`\n\n> El dinero ha sido depositado exitosamente en tu **Banco**.`,
-            }, { quoted: m });
+            await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
 
-        } catch (err) {
-            console.error(err);
-            m.reply(`*${config.visuals.emoji2}* Error interno al procesar la transacción.`);
+        } catch (e) {
+            console.error(e);
+            m.reply(`*${config.visuals.emoji2}* Error al procesar la tarjeta.`);
         }
     }
 };
