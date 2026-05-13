@@ -16,14 +16,16 @@ const givePjCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const giver = m.sender;
+            const giver = m.sender.replace(/:.*@/g, '@');
             const pjId = args[0];
 
-            let targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null);
+            let rawTarget = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null);
 
-            if (!pjId || !targetJid) {
+            if (!pjId || !rawTarget) {
                 return m.reply(`*${config.visuals.emoji2}* \`Uso Incorrecto\`\n\nIndica el ID y menciona al destinatario.\n> Ejemplo: #givepj 123 @usuario`);
             }
+
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
 
             if (giver === targetJid) return m.reply(`*${config.visuals.emoji2}* No tiene sentido regalarte algo a ti mismo.`);
 
@@ -40,7 +42,7 @@ const givePjCommand = {
 
             const pjInfoGrupo = dbGrupoGacha[pjId];
 
-            if (!pjInfoGrupo || pjInfoGrupo.owner !== giver) {
+            if (!pjInfoGrupo || pjInfoGrupo.owner.replace(/:.*@/g, '@') !== giver) {
                 return m.reply(`*${config.visuals.emoji2}* ¡Ese personaje no te pertenece!`);
             }
 
