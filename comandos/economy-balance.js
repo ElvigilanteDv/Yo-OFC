@@ -5,9 +5,7 @@ const balanceCommand = {
     alias: ['bal', 'cartera', 'billetera', 'banco'],
     category: 'economy',
     desc: 'Consulta el estado financiero actual (cartera, banco y total).',
-    isOwner: false,
     noPrefix: true,
-    isAdmin: false,
     isGroup: true,
 
     run: async (conn, m) => {
