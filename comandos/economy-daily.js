@@ -10,7 +10,7 @@ const dailyCommand = {
 
     run: async (conn, m) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const ahora = Date.now();
             const cooldown = 24 * 60 * 60 * 1000;
 
@@ -44,13 +44,12 @@ const dailyCommand = {
             }
 
             userDb.daily.streak += 1;
-            
+
             const baseCoins = 35000;
             const extraPorDia = 10000;
             const recompensa = baseCoins + (extraPorDia * (userDb.daily.streak - 1));
 
-            if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
-            userDb.wallet += recompensa;
+            userDb.wallet = (userDb.wallet || 0) + recompensa;
             userDb.daily.lastClaim = ahora;
 
             let texto = `*${config.visuals.emoji3}* \`RECOMPENSA DIARIA\` *${config.visuals.emoji3}*\n\n`;
