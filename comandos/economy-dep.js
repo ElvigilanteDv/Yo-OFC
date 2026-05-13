@@ -4,19 +4,20 @@ const depCommand = {
     name: 'deposit',
     alias: ['dep', 'd', 'depositar'],
     category: 'economy',
-    desc: 'Asegura tus coins enviándolas de tu cartera al banco para protegerlas.',
+    desc: 'Asegura tus coins enviándolas de tu cartera al banco.',
     noPrefix: true,
 
     run: async (conn, m, args) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
+            
             if (!global.db.data.users[user]) global.db.data.users[user] = { wallet: 0, bank: 0 };
             const userDb = global.db.data.users[user];
 
             const wallet = userDb.wallet || 0;
 
             if (wallet <= 0) {
-                return m.reply(`*${config.visuals.emoji2}* \`CARTERA VACÍA\`\n\nNo tienes dinero en tu cartera para depositar.\n\n> ¡Usa comandos como *#crime* o *#daily* para ganar dinero!`);
+                return m.reply(`*${config.visuals.emoji2}* \`CARTERA VACÍA\`\n\nNo tienes dinero en tu cartera para depositar.`);
             }
 
             let amount = args[0];
@@ -34,10 +35,8 @@ const depCommand = {
                 return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en cartera.`);
             }
 
-            if (typeof userDb.bank === 'undefined') userDb.bank = 0;
-
-            userDb.wallet -= amount;
-            userDb.bank += amount;
+            userDb.wallet = (userDb.wallet || 0) - amount;
+            userDb.bank = (userDb.bank || 0) + amount;
 
             let texto = `*${config.visuals.emoji3}* \`DEPÓSITO EXITOSO\` *${config.visuals.emoji3}*\n\n`;
             texto += `*${config.visuals.emoji} Monto:* ¥${amount.toLocaleString()}\n`;
