@@ -1,55 +1,51 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
 import { workFrases } from './frases/work.js';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const workCommand = {
     name: 'work',
     alias: ['chamba', 'trabajar', 'w'],
     category: 'economy',
-    desc: 'Realiza trabajos honrados para ganar coins y aumentar tu capital en el grupo.',
+    desc: 'Realiza trabajos honrados para ganar coins.',
     noPrefix: true,
     isGroup: true,
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
-            const now = Date.now();
+            const user = m.sender;
+            const ahora = Date.now();
             const cooldown = 5 * 60 * 1000;
 
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            if (!global.db.data.users[user]) global.db.data.users[user] = {};
+            const userDb = global.db.data.users[user];
 
-            if (!db[group]) db[group] = {};
-            if (!db[group][user]) {
-                db[group][user] = { wallet: 0, bank: 0, work: { lastUsed: 0 } };
-            }
-            if (!db[group][user].work) db[group][user].work = { lastUsed: 0 };
+            const tiempoPasado = ahora - (userDb.lastWork || 0);
 
-            const userData = db[group][user];
-            const timePassed = now - userData.work.lastUsed;
+            if (tiempoPasado < cooldown) {
+                const restante = cooldown - tiempoPasado;
+                const minutos = Math.floor(restante / 60000);
+                const segundos = Math.floor((restante % 60000) / 1000);
 
-            if (timePassed < cooldown) {
-                const rem = cooldown - timePassed;
-                return m.reply(`*${config.visuals.emoji2}* \`Descanso\`\n\nDebes esperar ${Math.floor(rem / 1000)}s para volver a chambear.`);
+                let tiempoTexto = minutos > 0 ? `${minutos}m ${segundos}s` : `${segundos}s`;
+                return m.reply(`*${config.visuals.emoji2}* \`DESCANSO\`\n\n> Debes esperar **${tiempoTexto}** para volver a chambear.`);
             }
 
-            const reward = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
+            const recompensa = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
             const frase = workFrases[Math.floor(Math.random() * workFrases.length)];
 
-            userData.wallet += reward;
-            userData.work.lastUsed = now; 
+            if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
             
-            db[group][user] = userData;
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+            userDb.wallet += recompensa;
+            userDb.lastWork = ahora;
 
-            await conn.sendMessage(m.chat, { 
-                text: `*${config.visuals.emoji3}* \`CHAMBA EXITOSA\`\n\n${frase}\n*Ganaste:* ¥${reward.toLocaleString()}`
-            }, { quoted: m });
+            let texto = `*${config.visuals.emoji3}* \`CHAMBA EXITOSA\` *${config.visuals.emoji3}*\n\n`;
+            texto += `${frase}\n`;
+            texto += `*${config.visuals.emoji} Ganaste:* ¥${recompensa.toLocaleString()}\n\n`;
+            texto += `> *Cartera:* ¥${userDb.wallet.toLocaleString()}`;
+
+            await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al procesar la chamba.`);
         }
     }
