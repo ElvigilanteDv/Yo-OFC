@@ -2,9 +2,6 @@ import { config } from '../config.js';
 import fs from 'fs-extra';
 import path from 'path';
 
-const ecoPath = path.resolve('./config/database/economy/economy.json');
-const rpgPath = path.resolve('./config/database/rpg/rpg.json');
-
 const menuCommand = {
     name: 'menu',
     alias: ['help', 'ayuda', 'menú', 'hel'],
@@ -15,7 +12,8 @@ const menuCommand = {
     run: async (conn, m, args, usedPrefix) => {
         try {
             const prefix = usedPrefix || '#'; 
-            const user = m.sender.split('@')[0].split(':')[0];
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            const userShortId = userJid.split('@')[0];
             const group = m.chat;
 
             const commandsSource = conn.commands || global.commands;
@@ -51,10 +49,12 @@ const menuCommand = {
                 if (localData.banner) displayBanner = localData.banner;
             }
 
-            const ecoDB = await fs.pathExists(ecoPath) ? await fs.readJson(ecoPath) : {};
-            const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
-            const wallet = ecoDB[user]?.wallet || 0;
-            const userRpg = rpgDB[group]?.[user] || {};
+            const userGlobal = global.db.data.users[userJid] || {};
+            const wallet = (userGlobal.wallet || 0) + (userGlobal.bank || 0);
+            
+            const groupData = global.db.data.chats[group] || {};
+            const userRpg = groupData.rpg?.[userJid] || {};
+            
             const rank = userRpg.rank || 'Novato de las Cuevas';
             const diamantes = userRpg.minerals?.diamantes || 0;
 
@@ -69,8 +69,8 @@ const menuCommand = {
 ┃ https://whatsapp.com/channel/0029Vb6sgWdJkK73qeLU0J0N
 ╰━━━━━━━━━━━━━━━━━━━╯\n`;
 
-            const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄 R ✿︎━━━━╮
-┃ ✐ *Usuario* »  @${user}
+            const infoUser = `┏━━━━✿︎ 𝐈𝐍𝐅𝐎-𝐔𝐒𝐄𝐑 ✿︎━━━━╮
+┃ ✐ *Usuario* »  @${userShortId}
 ┃ ✐ *Rango* » ${rank}
 ┃ ✐ *Coins* » ¥${wallet.toLocaleString()}
 ┃ ✐ *Diamantes* » ${diamantes}
@@ -111,7 +111,7 @@ const menuCommand = {
             await conn.sendMessage(m.chat, { 
                 image: { url: displayBanner }, 
                 caption: textoMenu,
-                mentions: [m.sender]
+                mentions: [userJid]
             }, { quoted: m });
 
         } catch (err) {
