@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
 const baseGroup = "120363423871589037@g.us";
@@ -9,7 +10,7 @@ const rwCommand = {
     name: 'rw',
     alias: ['roll', 'waifu'],
     category: 'gacha',
-    desc: 'Realiza un roll para descubrir un nuevo personaje en el grupo.',
+    desc: 'Realiza un roll para descubrir un nuevo personaje usando la API de Kazuma.',
     noPrefix: true,
     isGroup: true,
 
@@ -54,20 +55,38 @@ const rwCommand = {
             const infoFija = plantillaPersonajes[randomId];
             const infoGrupo = dbGrupo[randomId] || { status: 'libre', owner: null };
 
+            let imageUrl = infoFija.url;
+
+            if (!imageUrl) {
+                const query = `${infoFija.name} ${infoFija.source}`;
+                const apiUrl = `https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(query)}&apiKey=kzm-OifUrFOl-oSSLeonc`;
+                
+                try {
+                    const response = await axios.get(apiUrl);
+                    if (response.data.status && response.data.data.length > 0) {
+                        imageUrl = response.data.data[0].image_url;
+                    }
+                } catch (apiErr) {
+                    console.error('Error llamando a Kazuma API:', apiErr);
+                }
+            }
+
+            if (!imageUrl) imageUrl = 'https://telegra.ph/file/0cf76964ff002f232491a.jpg';
+
             let caption = `*» (❍ᴥ❍ʋ) \`GACHA ROLL\` «*\n\n`;
             caption += `*Nombre:* ${infoFija.name}\n`;
             caption += `*ID »* ${randomId}\n`;
             caption += `*Fuente:* ${infoFija.source}\n`;
             caption += `*Valor:* ¥${infoFija.value.toLocaleString()}\n`;
             caption += `*Estado:* ${infoGrupo.status === 'libre' ? 'Libre' : 'Domado'}\n`;
-            
+
             if (infoGrupo.owner) {
                 const ownerId = infoGrupo.owner.split('@')[0];
                 caption += `*Dueño:* @${ownerId}\n`;
             }
 
             const sent = await conn.sendMessage(m.chat, { 
-                image: { url: infoFija.url }, 
+                image: { url: imageUrl }, 
                 caption: caption,
                 mentions: infoGrupo.owner ? [infoGrupo.owner] : []
             }, { quoted: m });
