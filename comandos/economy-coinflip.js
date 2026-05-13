@@ -10,7 +10,7 @@ const flipCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const choice = args[0]?.toLowerCase();
 
             if (!choice || !['cara', 'cruz'].includes(choice)) {
