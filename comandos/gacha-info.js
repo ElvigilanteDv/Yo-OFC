@@ -9,22 +9,23 @@ const waifuInfoCommand = {
     name: 'waifuinfo',
     alias: ['gachainfo', 'pjsinfo', 'wi'],
     category: 'gacha',
-    desc: 'Muestra el historial de actividad gacha de un usuario (último roll, claim, voto, etc).',
+    desc: 'Muestra el historial de actividad gacha de un usuario.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
             const group = m.chat;
-            let targetJid = m.sender;
+            let rawTarget = m.sender;
 
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
-                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+                rawTarget = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                targetJid = m.quoted.sender;
+                rawTarget = m.quoted.sender;
             }
 
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
             const userDb = global.db.data.users[targetJid];
-            
+
             if (!userDb) {
                 return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros en el sistema.`);
             }
@@ -37,7 +38,8 @@ const waifuInfoCommand = {
             let totalPjs = 0;
 
             for (let id in dbGrupoGacha) {
-                if (dbGrupoGacha[id].owner === targetJid && plantillaPersonajes[id]) {
+                const ownerClean = dbGrupoGacha[id].owner.replace(/:.*@/g, '@');
+                if (ownerClean === targetJid && plantillaPersonajes[id]) {
                     totalPjs++;
                 }
             }
