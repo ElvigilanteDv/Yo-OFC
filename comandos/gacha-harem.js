@@ -21,9 +21,7 @@ const haremCommand = {
 
             if (args.length > 0) {
                 const lastArg = args[args.length - 1];
-                if (!isNaN(lastArg)) {
-                    page = parseInt(lastArg);
-                }
+                if (!isNaN(lastArg)) page = parseInt(lastArg);
             }
 
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
@@ -32,14 +30,14 @@ const haremCommand = {
                 targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const targetId = targetJid;
-            const isMe = targetJid === m.sender;
+            const targetId = targetJid.replace(/:.*@/g, '@');
+            const isMe = targetId === m.sender.replace(/:.*@/g, '@');
 
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: Base de datos no encontrada.`);
             const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
             const plantillaPersonajes = rawData[baseGroup];
 
-            if (!global.db.data.chats[group].gacha) {
+            if (!global.db.data.chats[group]?.gacha) {
                 return m.reply(`*${config.visuals.emoji2}* No hay registros de personajes en este grupo.`);
             }
 
@@ -47,7 +45,8 @@ const haremCommand = {
             let misPjs = [];
 
             for (let id in dbGrupoGacha) {
-                if (dbGrupoGacha[id].owner === targetId && plantillaPersonajes[id]) {
+                const ownerId = dbGrupoGacha[id].owner.replace(/:.*@/g, '@');
+                if (ownerId === targetId && plantillaPersonajes[id]) {
                     misPjs.push({
                         ...plantillaPersonajes[id],
                         id_db: id
@@ -56,13 +55,13 @@ const haremCommand = {
             }
 
             if (misPjs.length === 0) {
-                const mentionId = targetJid.split('@')[0];
+                const mentionId = targetId.split('@')[0];
                 if (isMe) {
-                    return m.reply(`*${config.visuals.emoji2}* Aún no tienes personajes reclamados en tu inventario de este grupo.\n\n> ¡Usa el comando #rw y luego #c para conseguir personajes épicos!`);
+                    return m.reply(`*${config.visuals.emoji2}* Aún no tienes personajes reclamados.\n\n> ¡Usa #rw y luego #c!`);
                 } else {
                     return conn.sendMessage(m.chat, { 
-                        text: `*${config.visuals.emoji2}* El usuario @${mentionId} no tiene personajes reclamados en este grupo.\n\n> ¡Se recomienda el comando #rw para conseguir!`,
-                        mentions: [targetJid]
+                        text: `*${config.visuals.emoji2}* El usuario @${mentionId} no tiene personajes reclamados.`,
+                        mentions: [targetId]
                     }, { quoted: m });
                 }
             }
@@ -72,15 +71,13 @@ const haremCommand = {
             const itemsPerPage = 5;
             const totalPages = Math.ceil(misPjs.length / itemsPerPage);
 
-            if (page > totalPages || page <= 0) {
-                return m.reply(`*${config.visuals.emoji2}* \`PÁGINA NO ENCONTRADA\`\n\nEl usuario solo tiene *${totalPages}* página(s) en su harem.`);
-            }
+            if (page > totalPages || page <= 0) page = 1;
 
             const start = (page - 1) * itemsPerPage;
             const end = start + itemsPerPage;
             const currentPjs = misPjs.slice(start, end);
 
-            const mentionId = targetJid.split('@')[0];
+            const mentionId = targetId.split('@')[0];
             let txt = `*${config.visuals.emoji3} \`HAREM DEL USUARIO\` ${config.visuals.emoji3}*\n`;
             txt += `» @${mentionId} (${misPjs.length} personajes)\n`;
             txt += `*Página:* ${page} de ${totalPages}\n\n`;
@@ -89,11 +86,9 @@ const haremCommand = {
                 txt += `› ${pj.name} \`[${pj.id_db}]\`\n`;
             });
 
-            txt += `\n> ¡Sigue reclamando más personajes para que seas el que más tiene!`;
-
             await conn.sendMessage(m.chat, { 
                 text: txt, 
-                mentions: [targetJid] 
+                mentions: [targetId] 
             }, { quoted: m });
 
         } catch (e) {
