@@ -8,6 +8,8 @@ const tmpDir = path.join(process.cwd(), 'tmp');
 
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
+const groupCache = new Map();
+
 export const pixelHandler = async (conn, m, config) => {
     try {
         if (!m || !m.message) return;
@@ -20,16 +22,19 @@ export const pixelHandler = async (conn, m, config) => {
         const moodSessionsPath = path.resolve('./sesiones_moods');
         let sessionFolder = '';
 
-        if (fs.existsSync(path.join(subSessionsPath, myJid))) {
-            sessionFolder = path.join(subSessionsPath, myJid);
-        } else if (fs.existsSync(path.join(moodSessionsPath, myJid))) {
-            sessionFolder = path.join(moodSessionsPath, myJid);
+        const subPathJid = path.join(subSessionsPath, myJid);
+        const moodPathJid = path.join(moodSessionsPath, myJid);
+
+        if (await fs.pathExists(subPathJid)) {
+            sessionFolder = subPathJid;
+        } else if (await fs.pathExists(moodPathJid)) {
+            sessionFolder = moodPathJid;
         }
 
         if (sessionFolder) {
             const selfFilePath = path.join(sessionFolder, 'self_status.json');
-            if (fs.existsSync(selfFilePath)) {
-                const selfData = JSON.parse(fs.readFileSync(selfFilePath, 'utf-8'));
+            if (await fs.pathExists(selfFilePath)) {
+                const selfData = await fs.readJson(selfFilePath).catch(() => ({}));
                 if (selfData.selfMode && !m.key.fromMe) return; 
             }
         }
@@ -37,12 +42,25 @@ export const pixelHandler = async (conn, m, config) => {
         const sender = m.sender;
         const isGroup = chat.endsWith('@g.us');
 
-        const groupMetadata = isGroup ? await conn.groupMetadata(chat).catch(() => ({})) : {};
-        const participants = isGroup ? (groupMetadata.participants || []) : [];
-        const userParticipant = participants.find(p => p.id === sender) || {};
-        const isAdmin = userParticipant.admin === 'admin' || userParticipant.admin === 'superadmin' || false;
-        const botParticipant = participants.find(p => p.id === conn.user.id.split(':')[0] + '@s.whatsapp.net') || {};
-        const isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin' || false;
+        let isAdmin = false;
+        let isBotAdmin = false;
+
+        if (isGroup) {
+            let groupMetadata = groupCache.get(chat);
+            if (!groupMetadata || (Date.now() - groupMetadata.time > 10000)) {
+                groupMetadata = await conn.groupMetadata(chat).catch(() => ({}));
+                if (groupMetadata.id) {
+                    groupMetadata.time = Date.now();
+                    groupCache.set(chat, groupMetadata);
+                }
+            }
+            const participants = groupMetadata.participants || [];
+            const userParticipant = participants.find(p => p.id === sender) || {};
+            isAdmin = userParticipant.admin === 'admin' || userParticipant.admin === 'superadmin' || false;
+            const botJid = conn.user.id.split(':')[0] + '@s.whatsapp.net';
+            const botParticipant = participants.find(p => p.id === botJid) || {};
+            isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin' || false;
+        }
 
         const ownerNumbers = config.owner.map(id => (typeof id === 'string' ? id : id[0]).replace(/\D/g, ''));
         const senderNumber = sender.split('@')[0].replace(/\D/g, '');
@@ -58,9 +76,9 @@ export const pixelHandler = async (conn, m, config) => {
         if (!body && !m.quoted) return;
 
         let activePrefixes = config.allPrefixes || ['#', '!', '.'];
-        if (fs.existsSync(prefixPath)) {
+        if (await fs.pathExists(prefixPath)) {
             try {
-                const prefixData = JSON.parse(fs.readFileSync(prefixPath, 'utf-8'));
+                const prefixData = await fs.readJson(prefixPath).catch(() => ({}));
                 if (prefixData.selected) activePrefixes = [prefixData.selected];
             } catch (e) {}
         }
@@ -80,8 +98,8 @@ export const pixelHandler = async (conn, m, config) => {
         if (isGroup) {
             const comandosGestion = ['setprimary', 'delprimary', 'sockets', 'bots', 'codemood'];
             if (!comandosGestion.includes(commandName)) {
-                if (fs.existsSync(databasePath)) {
-                    let db = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
+                if (await fs.pathExists(databasePath)) {
+                    let db = await fs.readJson(databasePath).catch(() => ({}));
                     if (db[chat]) {
                         const primaryNumber = db[chat].replace(/\D/g, '');
                         if (myJid !== primaryNumber) return; 
@@ -124,8 +142,12 @@ export const pixelHandler = async (conn, m, config) => {
         const subPath = path.join(subSessionsPath, myJid, 'settings.json');
         const moodPath = path.join(moodSessionsPath, myJid, 'settings.json');
         let sessionSettings = {};
-        if (fs.existsSync(subPath)) sessionSettings = JSON.parse(fs.readFileSync(subPath, 'utf-8'));
-        else if (fs.existsSync(moodPath)) sessionSettings = JSON.parse(fs.readFileSync(moodPath, 'utf-8'));
+        
+        if (await fs.pathExists(subPath)) {
+            sessionSettings = await fs.readJson(subPath).catch(() => ({}));
+        } else if (await fs.pathExists(moodPath)) {
+            sessionSettings = await fs.readJson(moodPath).catch(() => ({}));
+        }
 
         global.dynamicBotConfig = {
             botName: sessionSettings.shortName || config.botName || 'Kazuma',
