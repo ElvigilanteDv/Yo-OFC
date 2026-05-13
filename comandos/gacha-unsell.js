@@ -16,39 +16,33 @@ const unsellCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
+            const user = m.sender;
             const pjId = args[0];
 
-            if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje que deseas retirar del mercado.`);
+            if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje.`);
+
+            if (!global.db.data.chats[group].shop || !global.db.data.chats[group].shop[pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje no está en venta.`);
+            }
+
+            const item = global.db.data.chats[group].shop[pjId];
+            const sellerJid = item.seller.includes('@') ? item.seller : `${item.seller}@s.whatsapp.net`;
+
+            if (sellerJid !== user) {
+                return m.reply(`*${config.visuals.emoji2}* No puedes retirar un personaje que no es tuyo.`);
+            }
+
+            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
             
-            if (!fs.existsSync(shopPath)) return m.reply(`*${config.visuals.emoji2}* El mercado está vacío.`);
+            global.db.data.chats[group].gacha[pjId].status = 'domado';
+            
+            delete global.db.data.chats[group].shop[pjId];
 
-            let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-            let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
-
-            if (!shopDB[group] || !shopDB[group][pjId]) {
-                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no está en venta en este grupo.`);
-            }
-
-            if (shopDB[group][pjId].seller !== user) {
-                return m.reply(`*${config.visuals.emoji2}* No puedes retirar un personaje que no pusiste a la venta tú.`);
-            }
-
-            const pjName = shopDB[group][pjId].name;
-
-            delete shopDB[group][pjId];
-
-            if (gachaDB[group] && gachaDB[group][pjId]) {
-                gachaDB[group][pjId].status = 'domado';
-            }
-
-            fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
-            fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
-
-            m.reply(`*${config.visuals.emoji3}* Has retirado a *${pjName}* del mercado exitosamente.\n\n> El personaje vuelve a estar disponible en tu inventario.`);
+            m.reply(`*${config.visuals.emoji3}* Has retirado a *${item.name}* del mercado.\n\n> Vuelve a estar en tu inventario.`);
 
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error al retirar el personaje del mercado.`);
+            console.error(e);
+            m.reply(`*${config.visuals.emoji2}* Error al retirar el personaje.`);
         }
     }
 };
