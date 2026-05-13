@@ -10,21 +10,23 @@ const balanceCommand = {
 
     run: async (conn, m) => {
         try {
-            let targetJid = m.sender;
+            let rawJid = m.sender;
 
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
-                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+                rawJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
+                rawJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
+
+            const targetJid = rawJid.replace(/:.*@/g, '@');
 
             if (!global.db.data.users[targetJid]) {
                 global.db.data.users[targetJid] = { wallet: 0, bank: 0 };
             }
 
             const userDb = global.db.data.users[targetJid];
-            const userId = targetJid.split('@')[0].split(':')[0];
-            
+            const userId = targetJid.split('@')[0];
+
             const wallet = userDb.wallet || 0;
             const bank = userDb.bank || 0;
             const total = wallet + bank;
