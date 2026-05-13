@@ -16,7 +16,7 @@ const voteCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje que deseas votar.`);
@@ -34,7 +34,7 @@ const voteCommand = {
 
             const pjInfo = dbGrupoGacha[pjId];
 
-            if (!pjInfo || pjInfo.owner !== user) {
+            if (!pjInfo || pjInfo.owner.replace(/:.*@/g, '@') !== user) {
                 return m.reply(`*${config.visuals.emoji2}* ¡No puedes votar a un personaje que no te pertenece!`);
             }
 
