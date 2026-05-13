@@ -9,10 +9,12 @@ const giftCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const sender = m.sender;
-            let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
+            const sender = m.sender.replace(/:.*@/g, '@');
+            let rawTarget = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
 
-            if (!targetJid) return m.reply(`*${config.visuals.emoji2}* Responde a alguien para darle un regalo.`);
+            if (!rawTarget) return m.reply(`*${config.visuals.emoji2}* Responde a alguien para darle un regalo.`);
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
+
             if (sender === targetJid) return m.reply(`*${config.visuals.emoji2}* Quédate con tu dinero, no te lo puedes regalar a ti mismo.`);
 
             let amount = parseInt(args[0]?.replace(/[^0-9]/g, ''));
@@ -31,7 +33,7 @@ const giftCommand = {
             senderDb.wallet -= amount;
             receiverDb.wallet = (receiverDb.wallet || 0) + amount;
 
-            const receiverId = targetJid.split('@')[0].split(':')[0];
+            const receiverId = targetJid.split('@')[0];
 
             let texto = `*${config.visuals.emoji}* \`REGALO ENVIADO\` *${config.visuals.emoji}*\n\n`;
             texto += `Has enviado ¥${amount.toLocaleString()} de tu cartera a @${receiverId}.\n\n`;
