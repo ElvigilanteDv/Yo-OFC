@@ -1,8 +1,4 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const economyInfoCommand = {
     name: 'economy',
@@ -11,48 +7,48 @@ const economyInfoCommand = {
     desc: 'Consulta los tiempos de espera y el balance total de un usuario.',
     noPrefix: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m) => {
         try {
-            const group = m.chat;
-            let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
-            if (!targetJid) targetJid = m.sender;
-
-            const user = targetJid.split('@')[0].split(':')[0];
-            const cleanTargetJid = user + '@s.whatsapp.net';
-
-            if (!fs.existsSync(dbPath)) return m.reply('Error: DB no encontrada.');
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-
-            if (!db[group] || !db[group][user]) {
-                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros económicos en este grupo.`);
+            let targetJid = m.sender;
+            if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
+                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+            } else if (m.quoted) {
+                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const data = db[group][user];
-            const now = Date.now();
+            const userDb = global.db.data.users[targetJid];
+            if (!userDb) {
+                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros económicos.`);
+            }
+
+            const userId = targetJid.split('@')[0].split(':')[0];
+            const ahora = Date.now();
 
             const formatTime = (lastUsed) => {
                 if (!lastUsed || lastUsed === 0) return "*nunca*";
-                const diff = now - lastUsed;
-                const seconds = Math.floor(diff / 1000);
-                const minutes = Math.floor(seconds / 60);
-                const hours = Math.floor(minutes / 60);
-                const days = Math.floor(hours / 24);
+                const diff = ahora - lastUsed;
+                const segundos = Math.floor(diff / 1000);
+                const minutos = Math.floor(segundos / 60);
+                const horas = Math.floor(minutos / 60);
+                const dias = Math.floor(horas / 24);
 
-                if (days > 0) return `hace *${days}d*`;
-                if (hours > 0) return `hace *${hours}h*`;
-                if (minutes > 0) return `hace *${minutes}m*`;
-                return `hace *${seconds}s*`;
+                if (dias > 0) return `hace *${dias}d*`;
+                if (horas > 0) return `hace *${horas}h*`;
+                if (minutos > 0) return `hace *${minutos}m*`;
+                return `hace *${segundos}s*`;
             };
 
-            const dailyTime = formatTime(data.daily?.lastClaim);
-            const workTime = formatTime(data.work?.lastUsed);
-            const crimeTime = formatTime(data.crime?.lastUsed);
-            const slutTime = formatTime(data.slut?.lastUsed);
+            const dailyTime = formatTime(userDb.daily?.lastClaim);
+            const workTime = formatTime(userDb.lastWork);
+            const crimeTime = formatTime(userDb.lastCrime);
+            const slutTime = formatTime(userDb.lastSlut);
 
-            const totalCoins = (Number(data.wallet) || 0) + (Number(data.bank) || 0);
+            const wallet = userDb.wallet || 0;
+            const bank = userDb.bank || 0;
+            const totalCoins = wallet + bank;
 
-            let message = `*${config.visuals.emoji3}* \`Economia de\` *${config.visuals.emoji3}*\n\n`;
-            message += `› @${user}\n\n`;
+            let message = `*${config.visuals.emoji3}* \`ESTADÍSTICAS GLOBALES\` *${config.visuals.emoji3}*\n\n`;
+            message += `› @${userId}\n\n`;
             message += `ⴵ Daily » ${dailyTime}\n`;
             message += `ⴵ Work » ${workTime}\n`;
             message += `ⴵ Crime » ${crimeTime}\n`;
@@ -61,11 +57,12 @@ const economyInfoCommand = {
 
             await conn.sendMessage(m.chat, { 
                 text: message,
-                mentions: [cleanTargetJid]
+                mentions: [targetJid]
             }, { quoted: m });
 
         } catch (e) {
-            m.reply('Error al obtener la información económica.');
+            console.error(e);
+            m.reply(`*${config.visuals.emoji2}* Error al obtener la información económica.`);
         }
     }
 };
