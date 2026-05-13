@@ -25,7 +25,9 @@ const rwCommand = {
 
             if (userDb.lastGachaRoll && ahora - userDb.lastGachaRoll < cooldownTime) {
                 const restante = userDb.lastGachaRoll + cooldownTime - ahora;
-                return m.reply(`*${config.visuals.emoji2}* ¡Espera! Faltan ${Math.ceil(restante / 60000)} min.`);
+                const minutos = Math.floor(restante / 60000);
+                const segundos = Math.floor((restante % 60000) / 1000);
+                return m.reply(`*${config.visuals.emoji2}* ¡Espera! Faltan ${minutos} min y ${segundos} seg.`);
             }
 
             if (!fs.existsSync(gachaPath)) return m.reply('Error: Base de datos gacha no encontrada.');
