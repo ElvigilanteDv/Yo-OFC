@@ -2,7 +2,8 @@ import { config } from '../config.js';
 import fs from 'fs';
 import path from 'path';
 
-const dbPath = path.resolve('./config/database/gacha/gacha_list.json');
+const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
+const baseGroup = "120363423871589037@g.us";
 
 const waifuInfoCommand = {
     name: 'waifuinfo',
@@ -11,49 +12,62 @@ const waifuInfoCommand = {
     desc: 'Muestra el historial de actividad gacha de un usuario (último roll, claim, voto, etc).',
     noPrefix: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m) => {
         try {
             const group = m.chat;
-            let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
-            if (!targetJid) targetJid = m.sender;
+            let targetJid = m.sender;
 
-            const user = targetJid.split('@')[0].split(':')[0];
-            const cleanTargetJid = user + '@s.whatsapp.net';
-
-            if (!fs.existsSync(dbPath)) return m.reply('*⚠️* Error: DB Gacha no encontrada.');
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-
-            if (!db[group] || !db[group][user]) {
-                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros en el sistema Gacha de este grupo.`);
+            if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
+                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+            } else if (m.quoted) {
+                targetJid = m.quoted.sender;
             }
 
-            const data = db[group][user];
-            const now = Date.now();
+            const userDb = global.db.data.users[targetJid];
+            
+            if (!userDb) {
+                return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros en el sistema.`);
+            }
+
+            if (!fs.existsSync(gachaPath)) return m.reply('*⚠️* Error: DB Gacha no encontrada.');
+            const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const plantillaPersonajes = rawData[baseGroup];
+
+            const dbGrupoGacha = global.db.data.chats[group]?.gacha || {};
+            let totalPjs = 0;
+
+            for (let id in dbGrupoGacha) {
+                if (dbGrupoGacha[id].owner === targetJid && plantillaPersonajes[id]) {
+                    totalPjs++;
+                }
+            }
+
+            const ahora = Date.now();
 
             const formatTime = (lastUsed) => {
                 if (!lastUsed || lastUsed === 0) return "*nunca*";
-                const diff = now - lastUsed;
-                const seconds = Math.floor(diff / 1000);
-                const minutes = Math.floor(seconds / 60);
-                const hours = Math.floor(minutes / 60);
-                const days = Math.floor(hours / 24);
+                const diff = ahora - lastUsed;
+                const segundos = Math.floor(diff / 1000);
+                const minutos = Math.floor(segundos / 60);
+                const horas = Math.floor(minutos / 60);
+                const dias = Math.floor(horas / 24);
 
-                if (days > 0) return `hace *${days}d*`;
-                if (hours > 0) return `hace *${hours}h*`;
-                if (minutes > 0) return `hace *${minutes}m*`;
-                return `hace *${seconds}s*`;
+                if (dias > 0) return `hace *${dias}d*`;
+                if (horas > 0) return `hace *${horas}h*`;
+                if (minutos > 0) return `hace *${minutos}m*`;
+                return `hace *${segundos}s*`;
             };
 
-            const lastRw = formatTime(data.gacha?.lastRw);
-            const lastClaim = formatTime(data.gacha?.lastClaim);
-            const lastVote = formatTime(data.gacha?.lastVote);
-            const lastSell = formatTime(data.gacha?.lastSell);
-            const lastBuy = formatTime(data.gacha?.lastBuy);
+            const lastRw = formatTime(userDb.lastGachaRoll);
+            const lastClaim = formatTime(userDb.lastClaimRoll);
+            const lastVote = formatTime(userDb.lastVote);
+            const lastSell = formatTime(userDb.lastSell);
+            const lastBuy = formatTime(userDb.lastBuy);
 
-            const totalPjs = (data.harem || []).length;
+            const userId = targetJid.split('@')[0];
 
             let message = `*${config.visuals.emoji3}* \`Gacha de\` *${config.visuals.emoji3}*\n\n`;
-            message += `› @${user}\n\n`;
+            message += `› @${userId}\n\n`;
             message += `ⴵ Último Roll » ${lastRw}\n`;
             message += `ⴵ Último Claim » ${lastClaim}\n`;
             message += `ⴵ Último Voto » ${lastVote}\n`;
@@ -63,10 +77,11 @@ const waifuInfoCommand = {
 
             await conn.sendMessage(m.chat, { 
                 text: message,
-                mentions: [cleanTargetJid]
+                mentions: [targetJid]
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply('Error al obtener la información gacha.');
         }
     }
