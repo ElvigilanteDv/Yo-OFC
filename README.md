@@ -34,25 +34,8 @@ Ejemplo: 18095091237
 
 ---
 
-## 🤝 COLABORADORES
-Este proyecto cuenta con el apoyo de inteligencia artificial avanzada para optimizar su lógica y estructura.
-
-<table align="center">
-  <tr>
-    <td align="center">
-      <a href="https://gemini.google.com">
-        <img src="https://files.catbox.moe/zd9a5g.png" width="100px;" alt="Gemini"/><br />
-        <sub><b>Gemini AI</b></sub>
-      </a><br />
-      🤖 <b>AI Assistant</b>
-    </td>
-  </tr>
-</table>
-
----
-
 ## 👑 CREADOR
-El cerebro detrás de toda la arquitectura de Kazuma y la red de sockets.
+Creador y único desarrollador del proyecto desde el inicio hasta entonces.
 
 <table align="center">
   <tr>
@@ -65,12 +48,6 @@ El cerebro detrás de toda la arquitectura de Kazuma y la red de sockets.
     </td>
   </tr>
 </table>
-
----
-
-## 🛡️ CRÉDITOS
-* **Motor:** [Baileys](https://github.com/WhiskeySockets/Baileys)
-* **Diseño:** Inspirado en mi API YOTSUBA
 
 ---
 <p align="center">
