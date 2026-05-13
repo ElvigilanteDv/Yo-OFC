@@ -14,7 +14,7 @@ const claimCard = {
 
     run: async (conn, m, args) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const inputCode = args[0];
 
             if (!inputCode) {
