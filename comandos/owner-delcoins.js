@@ -17,14 +17,15 @@ const removeCoins = {
                 return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nEste comando solo puede ser ejecutado por mi creador.`);
             }
 
-            let targetJid = m.quoted ? m.quoted.sender || m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
+            let rawTarget = m.quoted ? m.quoted.sender || m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
 
-            if (!targetJid) {
+            if (!rawTarget) {
                 return m.reply(`*${config.visuals.emoji2}* \`Usuario Requerido\`\n\nMenciona a alguien o responde a su mensaje.`);
             }
 
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
             const userDb = global.db.data.users[targetJid];
-            const userId = targetJid.split('@')[0].split(':')[0];
+            const userId = targetJid.split('@')[0];
 
             if (!userDb || ((userDb.wallet || 0) + (userDb.bank || 0)) <= 0) {
                 return m.reply(`*${config.visuals.emoji2}* \`Usuario Sin Fondos\`\n\n@${userId} no tiene dinero para confiscar.`, { mentions: [targetJid] });
