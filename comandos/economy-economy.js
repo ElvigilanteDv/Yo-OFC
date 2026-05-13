@@ -2,26 +2,28 @@ import { config } from '../config.js';
 
 const economyInfoCommand = {
     name: 'economy',
-    alias: ['ecoinfo', 'einfo'],
+    alias: ['ecoinfo', 'einfo', 'ainfo'],
     category: 'economy',
     desc: 'Consulta los tiempos de espera y el balance total de un usuario.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
-            let targetJid = m.sender;
+            let rawJid = m.sender;
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
-                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+                rawJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
+                rawJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
+            const targetJid = rawJid.replace(/:.*@/g, '@');
             const userDb = global.db.data.users[targetJid];
+            
             if (!userDb) {
                 return m.reply(`*${config.visuals.emoji2}* El usuario no tiene registros económicos.`);
             }
 
-            const userId = targetJid.split('@')[0].split(':')[0];
+            const userId = targetJid.split('@')[0];
             const ahora = Date.now();
 
             const formatTime = (lastUsed) => {
