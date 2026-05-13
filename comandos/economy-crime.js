@@ -5,13 +5,13 @@ const crimeCommand = {
     name: 'crime',
     alias: ['crimen', 'asaltar'],
     category: 'economy',
-    desc: 'Arriésgate a cometer actos ilícitos para obtener grandes sumas de dinero.',
+    desc: 'Arriésgate a cometer actos ilícitos para obtener dinero.',
     noPrefix: true,
     isGroup: true,
 
     run: async (conn, m) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const ahora = Date.now();
             const cooldown = 20 * 60 * 1000;
 
@@ -33,9 +33,8 @@ const crimeCommand = {
             if (exito) {
                 const fr = crimeFrases[Math.floor(Math.random() * crimeFrases.length)];
                 const recompensa = Math.floor(Math.random() * (fr.max - fr.min + 1)) + fr.min;
-                
-                if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
-                userDb.wallet += recompensa;
+
+                userDb.wallet = (userDb.wallet || 0) + recompensa;
 
                 let texto = `*${config.visuals.emoji3}* \`CRIMEN EXITOSO\` *${config.visuals.emoji3}*\n\n`;
                 texto += `${fr.text}\n`;
