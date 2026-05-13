@@ -3,7 +3,7 @@ import path from 'path';
 import { config } from '../config.js';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const shopPath = path.resolve('./config/database/gacha/gacha_shop.json');
+const baseGroup = "120363423871589037@g.us";
 
 const voteCommand = {
     name: 'vote',
@@ -16,42 +16,46 @@ const voteCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
+            const user = m.sender;
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje que deseas votar.`);
 
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: DB Gacha no encontrada.`);
-            let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const plantillaPersonajes = rawData[baseGroup];
 
-            if (!gachaDB[group] || !gachaDB[group][pjId]) {
-                return m.reply(`*${config.visuals.emoji2}* El personaje no existe en este grupo.`);
+            if (!plantillaPersonajes[pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje no existe.`);
             }
 
-            const pj = gachaDB[group][pjId];
+            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
+            const dbGrupoGacha = global.db.data.chats[group].gacha;
 
-            if (pj.owner !== user) {
+            const pjInfo = dbGrupoGacha[pjId];
+
+            if (!pjInfo || pjInfo.owner !== user) {
                 return m.reply(`*${config.visuals.emoji2}* ¡No puedes votar a un personaje que no te pertenece!`);
             }
 
-            const pjName = pj.name;
+            const pjName = plantillaPersonajes[pjId].name;
 
-            gachaDB[group][pjId].status = 'libre';
-            delete gachaDB[group][pjId].owner;
+            dbGrupoGacha[pjId] = {
+                status: 'libre',
+                owner: null
+            };
 
-            if (fs.existsSync(shopPath)) {
-                let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-                if (shopDB[group] && shopDB[group][pjId]) {
-                    delete shopDB[group][pjId];
-                    fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
-                }
+            if (global.db.data.chats[group].shop && global.db.data.chats[group].shop[pjId]) {
+                delete global.db.data.chats[group].shop[pjId];
             }
 
-            fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
+            if (!global.db.data.users[user]) global.db.data.users[user] = {};
+            global.db.data.users[user].lastVote = Date.now();
 
             m.reply(`*${config.visuals.emoji3}* Has votado a *${pjName}*. Ahora es libre y ha sido retirado de cualquier mercado en este grupo.`);
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al procesar el voto.`);
         }
     }
