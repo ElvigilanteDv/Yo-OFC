@@ -11,7 +11,7 @@ const workCommand = {
 
     run: async (conn, m) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const ahora = Date.now();
             const cooldown = 5 * 60 * 1000;
 
@@ -32,9 +32,7 @@ const workCommand = {
             const recompensa = Math.floor(Math.random() * (5000 - 2000 + 1)) + 2000;
             const frase = workFrases[Math.floor(Math.random() * workFrases.length)];
 
-            if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
-            
-            userDb.wallet += recompensa;
+            userDb.wallet = (userDb.wallet || 0) + recompensa;
             userDb.lastWork = ahora;
 
             let texto = `*${config.visuals.emoji3}* \`CHAMBA EXITOSA\` *${config.visuals.emoji3}*\n\n`;
