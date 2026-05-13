@@ -1,9 +1,5 @@
 import { config } from '../config.js';
 import { flipFrases } from './frases/flip.js';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const flipCommand = {
     name: 'coinflip',
@@ -14,57 +10,48 @@ const flipCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
+            const user = m.sender;
             const choice = args[0]?.toLowerCase();
 
             if (!choice || !['cara', 'cruz'].includes(choice)) {
                 return m.reply(`*${config.visuals.emoji2}* \`FALTAN DATOS\`\n\nElige una opción: *cara* o *cruz*.\n*Ejemplo:* #flip cara`);
             }
 
-            if (!fs.existsSync(dbPath)) return m.reply('Error: DB no encontrada.');
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            if (!global.db.data.users[user]) global.db.data.users[user] = { wallet: 0, bank: 0 };
+            const userDb = global.db.data.users[user];
 
-            // Inicializar estructura de grupo y usuario
-            if (!db[group]) db[group] = {};
-            if (!db[group][user]) {
-                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
-
-            const userData = db[group][user];
-            const totalMoney = (Number(userData.wallet) || 0) + (Number(userData.bank) || 0);
+            const wallet = userDb.wallet || 0;
+            const bank = userDb.bank || 0;
+            const totalMoney = wallet + bank;
 
             if (totalMoney < 5000) {
                 return m.reply(`*${config.visuals.emoji2}* \`POCO CAPITAL\`\n\nNecesitas al menos ¥5,000 en total para apostar.`);
             }
 
             const bet = 1000;
-            const luck = Math.random(); 
-            const win = luck < 0.3; 
+            const win = Math.random() < 0.3; 
             const result = win ? choice : (choice === 'cara' ? 'cruz' : 'cara');
 
             if (win) {
-                userData.wallet = (Number(userData.wallet) || 0) + bet;
+                userDb.wallet = (userDb.wallet || 0) + bet;
                 const frase = flipFrases.win[Math.floor(Math.random() * flipFrases.win.length)];
-                
+
                 await conn.sendMessage(m.chat, { 
-                    text: `*${config.visuals.emoji3}* \`¡GANASTE!\` *${config.visuals.emoji2}*\n\nSalió: *${result.toUpperCase()}*\n${frase}\n\n> *Cartera:* ¥${userData.wallet.toLocaleString()}`
+                    text: `*${config.visuals.emoji3}* \`¡GANASTE!\` *${config.visuals.emoji3}*\n\nSalió: *${result.toUpperCase()}*\n${frase}\n\n> *Cartera:* ¥${userDb.wallet.toLocaleString()}`
                 }, { quoted: m });
             } else {
-                if (userData.wallet >= bet) {
-                    userData.wallet -= bet;
+                if ((userDb.wallet || 0) >= bet) {
+                    userDb.wallet -= bet;
                 } else {
-                    userData.bank = (Number(userData.bank) || 0) - bet;
+                    userDb.bank = (userDb.bank || 0) - bet;
                 }
-                
+
                 const frase = flipFrases.lose[Math.floor(Math.random() * flipFrases.lose.length)];
-                
+
                 await conn.sendMessage(m.chat, { 
                     text: `*${config.visuals.emoji2}* \`PERDISTE\` *${config.visuals.emoji2}*\n\nSalió: *${result.toUpperCase()}*\n${frase}\n\n> *Balance actualizado.*`
                 }, { quoted: m });
             }
-
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
 
         } catch (e) {
             console.error(e);
