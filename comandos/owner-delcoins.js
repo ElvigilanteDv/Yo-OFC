@@ -1,14 +1,10 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
-
-const economyPath = path.resolve('./config/database/economy/economy.json');
 
 const removeCoins = {
     name: 'removecoins',
     alias: ['quitarcoins', 'delcoins', 'removerdinero'],
     category: 'owner',
-    desc: 'Confisca monedas de un usuario (cartera y banco).',
+    desc: 'Confisca monedas de un usuario de su cartera y banco.',
     isOwner: true,
     noPrefix: true,
 
@@ -16,81 +12,62 @@ const removeCoins = {
         try {
             const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-            const isRealOwner = senderNumber === realOwnerNumber;
 
-            if (!isRealOwner) {
-                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\` *${config.visuals.emoji2}*\n\nSolo el administrador principal tiene autoridad.`);
+            if (senderNumber !== realOwnerNumber) {
+                return m.reply(`*${config.visuals.emoji2}* \`ACCESO DENEGADO\`\n\nEste comando solo puede ser ejecutado por mi creador.`);
             }
 
-            const group = m.chat;
-            let targetJid = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender || m.quoted.key.participant || m.quoted.key.remoteJid : null;
+            let targetJid = m.quoted ? m.quoted.sender || m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
 
             if (!targetJid) {
                 return m.reply(`*${config.visuals.emoji2}* \`Usuario Requerido\`\n\nMenciona a alguien o responde a su mensaje.`);
             }
 
-            const user = targetJid.split('@')[0].split(':')[0];
-            const cleanTargetJid = user + '@s.whatsapp.net';
-            
+            const userDb = global.db.data.users[targetJid];
+            const userId = targetJid.split('@')[0].split(':')[0];
+
+            if (!userDb || ((userDb.wallet || 0) + (userDb.bank || 0)) <= 0) {
+                return m.reply(`*${config.visuals.emoji2}* \`Usuario Sin Fondos\`\n\n@${userId} no tiene dinero para confiscar.`, { mentions: [targetJid] });
+            }
+
             const isAll = args.some(arg => arg.toLowerCase() === 'all' || arg.toLowerCase() === 'todo');
             const montoInput = parseInt(args.find(arg => !isNaN(arg) && !arg.includes('@')));
 
             if (!isAll && (!montoInput || montoInput <= 0)) {
-                return m.reply(`*${config.visuals.emoji2}* \`Monto Inválido\`\n\nIngresa una cantidad válida o escribe *all* para quitar todo.`);
+                return m.reply(`*${config.visuals.emoji2}* \`Monto Inválido\`\n\nIngresa una cantidad o usa *all*.`);
             }
 
-            if (!fs.existsSync(economyPath)) return m.reply(`*${config.visuals.emoji2}* Base de datos no encontrada.`);
-            let ecoDb = JSON.parse(fs.readFileSync(economyPath, 'utf-8'));
-
-            if (!ecoDb[group] || !ecoDb[group][user] || ((Number(ecoDb[group][user].wallet) || 0) + (Number(ecoDb[group][user].bank) || 0)) <= 0) {
-                return m.reply(`*${config.visuals.emoji2}* \`Usuario Sin Fondos\`\n\n@${user} no tiene dinero en ninguna de sus cuentas.`, { mentions: [cleanTargetJid] });
-            }
-
-            let wallet = Number(ecoDb[group][user].wallet || 0);
-            let bank = Number(ecoDb[group][user].bank || 0);
+            let wallet = userDb.wallet || 0;
+            let bank = userDb.bank || 0;
             let totalDisponible = wallet + bank;
             let retiradoReal = 0;
 
             if (isAll) {
                 retiradoReal = totalDisponible;
-                wallet = 0;
-                bank = 0;
+                userDb.wallet = 0;
+                userDb.bank = 0;
             } else {
-                if (totalDisponible < montoInput) {
-                    retiradoReal = totalDisponible;
-                    wallet = 0;
-                    bank = 0;
+                retiradoReal = Math.min(totalDisponible, montoInput);
+                let restante = retiradoReal;
+
+                if (userDb.wallet >= restante) {
+                    userDb.wallet -= restante;
                 } else {
-                    retiradoReal = montoInput;
-                    let restante = montoInput;
-
-                    if (wallet >= restante) {
-                        wallet -= restante;
-                        restante = 0;
-                    } else {
-                        restante -= wallet;
-                        wallet = 0;
-                    }
-
-                    if (restante > 0) {
-                        bank -= restante;
-                    }
+                    restante -= (userDb.wallet || 0);
+                    userDb.wallet = 0;
+                    userDb.bank = Math.max(0, (userDb.bank || 0) - restante);
                 }
             }
 
-            ecoDb[group][user].wallet = wallet;
-            ecoDb[group][user].bank = bank;
-
-            fs.writeFileSync(economyPath, JSON.stringify(ecoDb, null, 2), 'utf-8');
-
-            const texto = `*${config.visuals.emoji3}* \`SANCIÓN ECONÓMICA\` *${config.visuals.emoji3}*\n\n*❁ Usuario:* @${user}\n*❁ Monto Retirado:* \`¥${retiradoReal.toLocaleString()}\` ${isAll ? '*(TODO)*' : ''}\n\n*${config.visuals.emoji} Cartera Restante:* ¥${wallet.toLocaleString()}\n*${config.visuals.emoji4} Banco Restante:* ¥${bank.toLocaleString()}\n\n> Los fondos han sido procesados correctamente.`;
+            const texto = `*${config.visuals.emoji3}* \`SANCIÓN ECONÓMICA\` *${config.visuals.emoji3}*\n\n*❁ Usuario:* @${userId}\n*❁ Monto Retirado:* \`¥${retiradoReal.toLocaleString()}\` ${isAll ? '*(TODO)*' : ''}\n\n*${config.visuals.emoji} Cartera:* ¥${(userDb.wallet || 0).toLocaleString()}\n*${config.visuals.emoji4} Banco:* ¥${(userDb.bank || 0).toLocaleString()}\n\n> Los fondos han sido confiscados correctamente.`;
 
             await conn.sendMessage(m.chat, { 
                 text: texto, 
-                mentions: [cleanTargetJid] 
+                mentions: [targetJid] 
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error interno al procesar la sanción.`);
         }
     }
