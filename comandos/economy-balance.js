@@ -1,8 +1,4 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const balanceCommand = {
     name: 'balance',
@@ -16,7 +12,6 @@ const balanceCommand = {
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
             let targetJid = m.sender;
 
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
@@ -25,27 +20,26 @@ const balanceCommand = {
                 targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const user = targetJid.split('@')[0].split(':')[0];
-
-            if (!fs.existsSync(dbPath)) {
-                return m.reply(`*${config.visuals.emoji2}* Error: Base de datos no encontrada.`);
+            if (!global.db.data.users[targetJid]) {
+                global.db.data.users[targetJid] = { wallet: 0, bank: 0 };
             }
 
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            const userDb = global.db.data.users[targetJid];
+            const userId = targetJid.split('@')[0].split(':')[0];
+            
+            const wallet = userDb.wallet || 0;
+            const bank = userDb.bank || 0;
+            const total = wallet + bank;
 
-            if (!db[group]) db[group] = {};
-            if (!db[group][user]) {
-                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
-
-            const userData = db[group][user];
-            const total = (userData.wallet || 0) + (userData.bank || 0);
-
-            const texto = `*${config.visuals.emoji3}* \`ESTADO FINANCIERO\` *${config.visuals.emoji3}*\n\n*${config.visuals.emoji} Cartera:* ¥${(userData.wallet || 0).toLocaleString()}\n*${config.visuals.emoji4} Banco:* ¥${(userData.bank || 0).toLocaleString()}\n*${config.visuals.emoji2} Total:* ¥${total.toLocaleString()}\n\n> *Usuario:* @${user}`;
+            let texto = `*${config.visuals.emoji3} BALANCE DE CUENTA ${config.visuals.emoji3}*\n\n`;
+            texto += `» *Cartera:* ¥${wallet.toLocaleString()}\n`;
+            texto += `» *Banco:* ¥${bank.toLocaleString()}\n\n`;
+            texto += `» *Total:* ¥${total.toLocaleString()}\n`;
+            texto += `» *Usuario:* @${userId}`;
 
             await conn.sendMessage(m.chat, { 
                 text: texto, 
-                mentions: [`${user}@s.whatsapp.net`] 
+                mentions: [targetJid] 
             }, { quoted: m });
 
         } catch (e) {
