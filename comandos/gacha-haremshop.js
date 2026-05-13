@@ -38,11 +38,12 @@ const haremShop = {
 
             let mentions = [];
             currentItems.forEach((item, i) => {
-                const sellerId = item.seller.split('@')[0];
+                const sellerClean = item.seller.replace(/:.*@/g, '@');
+                const sellerId = sellerClean.split('@')[0];
                 txt += `*${start + i + 1}.* ${item.name} (\`${item.id}\`)\n`;
                 txt += `  ᗒ *Vendedor:* @${sellerId}\n`;
                 txt += `  ᗒ *Precio:* ¥${item.salePrice.toLocaleString()}\n\n`;
-                if (!mentions.includes(item.seller)) mentions.push(item.seller);
+                if (!mentions.includes(sellerClean)) mentions.push(sellerClean);
             });
 
             txt += `\n> Usa el comando *#buy (ID)* para comprar un personaje.`;
