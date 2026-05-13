@@ -1,9 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { config } from '../config.js';
-
-const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const shopPath = path.resolve('./config/database/gacha/gacha_shop.json');
 
 const unsellCommand = {
     name: 'unsell',
