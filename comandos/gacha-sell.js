@@ -3,7 +3,7 @@ import path from 'path';
 import { config } from '../config.js';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const shopPath = path.resolve('./config/database/gacha/gacha_shop.json');
+const baseGroup = "120363423871589037@g.us";
 
 const sellCommand = {
     name: 'sell',
@@ -16,7 +16,7 @@ const sellCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
+            const user = m.sender;
             const pjId = args[0];
             const price = parseInt(args[1]);
 
@@ -25,42 +25,49 @@ const sellCommand = {
             }
 
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: DB Gacha no encontrada.`);
-            let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const plantillaPersonajes = rawData[baseGroup];
 
-            if (!gachaDB[group] || !gachaDB[group][pjId]) {
-                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe en este grupo.`);
+            if (!plantillaPersonajes[pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe.`);
             }
-            
-            const pj = gachaDB[group][pjId];
-            if (pj.owner !== user) return m.reply(`*${config.visuals.emoji2}* ¡Este personaje no te pertenece!`);
 
-            const minPrice = (pj.value || 0) + 1000;
+            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
+            const dbGrupoGacha = global.db.data.chats[group].gacha;
+
+            const pjInfo = dbGrupoGacha[pjId];
+
+            if (!pjInfo || pjInfo.owner !== user) {
+                return m.reply(`*${config.visuals.emoji2}* ¡Este personaje no te pertenece!`);
+            }
+
+            const pjPlantilla = plantillaPersonajes[pjId];
+            const minPrice = (pjPlantilla.value || 0) + 1000;
+
             if (price < minPrice) {
                 return m.reply(`*${config.visuals.emoji2}* El precio mínimo de venta es *¥${minPrice.toLocaleString()}*.`);
             }
 
-            if (!fs.existsSync(shopPath)) fs.writeFileSync(shopPath, JSON.stringify({}));
-            let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-
-            if (!shopDB[group]) shopDB[group] = {};
-
-            shopDB[group][pjId] = {
+            if (!global.db.data.chats[group].shop) global.db.data.chats[group].shop = {};
+            
+            global.db.data.chats[group].shop[pjId] = {
                 id: pjId,
-                name: pj.name,
+                name: pjPlantilla.name,
                 seller: user,
-                originalValue: pj.value,
+                originalValue: pjPlantilla.value,
                 salePrice: price,
                 date: Date.now()
             };
 
-            gachaDB[group][pjId].status = 'en_venta';
+            dbGrupoGacha[pjId].status = 'en_venta';
 
-            fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
-            fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
+            if (!global.db.data.users[user]) global.db.data.users[user] = {};
+            global.db.data.users[user].lastSell = Date.now();
 
-            m.reply(`*${config.visuals.emoji3}* Has puesto a *${pj.name}* en el mercado por *¥${price.toLocaleString()}*.`);
+            m.reply(`*${config.visuals.emoji3}* Has puesto a *${pjPlantilla.name}* en el mercado por *¥${price.toLocaleString()}*.\n\n_ID: ${pjId}_`);
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al poner en venta.`);
         }
     }
