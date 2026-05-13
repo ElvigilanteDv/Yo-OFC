@@ -1,8 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { config } from '../config.js';
-
-const shopPath = path.resolve('./config/database/gacha/gacha_shop.json');
 
 const haremShop = {
     name: 'haremshop',
@@ -15,15 +11,16 @@ const haremShop = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            if (!fs.existsSync(shopPath)) return m.reply(`*${config.visuals.emoji2}* No hay personajes en venta.`);
 
-            let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-            
-            if (!shopDB[group] || Object.keys(shopDB[group]).length === 0) {
+            if (!global.db.data.chats[group].shop || Object.keys(global.db.data.chats[group].shop).length === 0) {
                 return m.reply(`*${config.visuals.emoji2}* El mercado de este grupo está vacío.`);
             }
 
-            let items = Object.values(shopDB[group]);
+            let shopData = global.db.data.chats[group].shop;
+            let items = Object.keys(shopData).map(id => ({
+                id,
+                ...shopData[id]
+            }));
 
             let page = args[0] ? parseInt(args[0]) : 1;
             if (isNaN(page) || page < 1) page = 1;
@@ -39,20 +36,24 @@ const haremShop = {
             let txt = `*${config.visuals.emoji3} \`MERCADO DE PERSONAJES\` ${config.visuals.emoji3}*\n`;
             txt += `*Página:* ${page} de ${totalPages}\n\n`;
 
+            let mentions = [];
             currentItems.forEach((item, i) => {
+                const sellerId = item.seller.split('@')[0];
                 txt += `*${start + i + 1}.* ${item.name} (\`${item.id}\`)\n`;
-                txt += `  ᗒ *Vendedor:* @${item.seller}\n`;
+                txt += `  ᗒ *Vendedor:* @${sellerId}\n`;
                 txt += `  ᗒ *Precio:* ¥${item.salePrice.toLocaleString()}\n\n`;
+                if (!mentions.includes(item.seller)) mentions.push(item.seller);
             });
 
             txt += `\n> Usa el comando *#buy (ID)* para comprar un personaje.`;
 
             await conn.sendMessage(m.chat, { 
                 text: txt, 
-                mentions: currentItems.map(i => i.seller + '@s.whatsapp.net') 
+                mentions: mentions 
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al cargar el mercado.`);
         }
     }
