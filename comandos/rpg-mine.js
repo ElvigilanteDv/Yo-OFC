@@ -1,11 +1,5 @@
 import { config } from '../config.js';
-import fs from 'fs-extra';
-import path from 'path';
 import { checkRankUpdate } from './rpg-avisos.js';
-
-const rpgDbPath = path.resolve('./config/database/rpg/rpg.json');
-const economyDbPath = path.resolve('./config/database/economy/economy.json');
-const invPath = path.resolve('./config/database/economy/inventory.json');
 
 const mineCommand = {
     name: 'mine',
@@ -16,47 +10,25 @@ const mineCommand = {
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
-            const cooldown = 5 * 60 * 1000; 
+            const groupJid = m.chat;
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            
+            const userDb = global.db.data.users[userJid];
+            const chatDb = global.db.data.chats[groupJid];
 
-            const botNumber = conn.user.id.split(':')[0];
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
-            let settingsPath = '';
-
-            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
-                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
-                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            }
-
-            let displayShortName = config.botName;
-
-            if (settingsPath && fs.existsSync(settingsPath)) {
-                const localData = await fs.readJson(settingsPath);
-                if (localData.shortName) displayShortName = localData.shortName;
-            }
-
-            if (!fs.existsSync(rpgDbPath)) fs.outputJsonSync(rpgDbPath, {});
-            if (!fs.existsSync(economyDbPath)) fs.outputJsonSync(economyDbPath, {});
-            if (!fs.existsSync(invPath)) fs.outputJsonSync(invPath, {});
-
-            let rpgDb = await fs.readJson(rpgDbPath);
-            let ecoDb = await fs.readJson(economyDbPath);
-            let invDb = await fs.readJson(invPath);
-
-            if (!rpgDb[group]) rpgDb[group] = {};
-            if (!rpgDb[group][user]) {
-                rpgDb[group][user] = { 
+            if (!chatDb.rpg) chatDb.rpg = {};
+            if (!chatDb.rpg[userJid]) {
+                chatDb.rpg[userJid] = { 
                     minerals: { diamantes: 0, rubies: 0, esmeraldas: 0, zafiros: 0, amatistas: 0, perlas: 0, oro: 0 }, 
                     lastMine: 0,
                     rank: 'Novato de las Cuevas'
                 };
             }
 
+            const userData = chatDb.rpg[userJid];
+            const cooldown = 5 * 60 * 1000; 
             const now = Date.now();
-            const timePassed = now - (rpgDb[group][user].lastMine || 0);
+            const timePassed = now - (userData.lastMine || 0);
 
             if (timePassed < cooldown) {
                 const timeLeft = cooldown - timePassed;
@@ -65,7 +37,7 @@ const mineCommand = {
                 return m.reply(`*${config.visuals.emoji2}* ¡Descansa! Podrás volver a minar en **${min}m ${sec}s**.`);
             }
 
-            const tieneIman = invDb[user]?.iman > 0;
+            const tieneIman = userDb.inventory?.iman > 0;
             const rewards = {
                 diamantes: Math.floor(Math.random() * 3),
                 rubies: Math.floor(Math.random() * 5),
@@ -79,27 +51,26 @@ const mineCommand = {
 
             if (tieneIman) {
                 for (let key in rewards) rewards[key] *= 2;
-                invDb[user].iman -= 1;
-                await fs.writeJson(invPath, invDb, { spaces: 2 });
+                userDb.inventory.iman -= 1;
             }
 
             for (let key in rewards) {
-                if (key !== 'coins') rpgDb[group][user].minerals[key] = (rpgDb[group][user].minerals[key] || 0) + rewards[key];
+                if (key !== 'coins') userData.minerals[key] = (userData.minerals[key] || 0) + rewards[key];
             }
-            rpgDb[group][user].lastMine = now;
+            
+            userData.lastMine = now;
+            userDb.wallet = (userDb.wallet || 0) + rewards.coins;
 
-            if (!ecoDb[user]) ecoDb[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            ecoDb[user].wallet = (ecoDb[user].wallet || 0) + rewards.coins;
+            await checkRankUpdate(conn, m, userJid, groupJid);
 
-            await checkRankUpdate(conn, m, user, group, rpgDb);
-            await fs.writeJson(rpgDbPath, rpgDb, { spaces: 2 });
-            await fs.writeJson(economyDbPath, ecoDb, { spaces: 2 });
-
-            let extraInfo = tieneIman ? `\n🧲 *¡EFECTO IMÁN ACTIVADO!* Has extraído el doble de recursos.\n` : '';
-            const textoExito = `*${config.visuals.emoji3}* \`MINERÍA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${extraInfo}\nHas excavado profundamente en las minas. Recursos obtenidos:\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡Sigue explorando las minas para obtener más recursos!`;
+            const displayShortName = conn.user.shortName || config.botName;
+            let extraInfo = tieneIman ? `\n🧲 *¡EFECTO IMÁN ACTIVADO!* Recursos duplicados.\n` : '';
+            
+            const textoExito = `*${config.visuals.emoji3}* \`MINERÍA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${extraInfo}\nRecursos obtenidos:\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡Sigue excavando para subir de rango!`;
 
             await conn.sendMessage(m.chat, { text: textoExito }, { quoted: m });
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en el sistema de minas.`);
         }
     }
