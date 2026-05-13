@@ -16,7 +16,7 @@ const buyCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const buyer = m.sender;
+            const buyer = m.sender.replace(/:.*@/g, '@');
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje.`);
@@ -26,7 +26,7 @@ const buyCommand = {
             }
 
             const item = global.db.data.chats[group].shop[pjId];
-            const seller = item.seller;
+            const seller = item.seller.replace(/:.*@/g, '@');
             const price = item.salePrice;
 
             if (buyer === seller) return m.reply(`*${config.visuals.emoji2}* No puedes comprar tu propio personaje.`);
@@ -45,7 +45,7 @@ const buyCommand = {
             sellerDb.wallet += price;
 
             if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
-            
+
             global.db.data.chats[group].gacha[pjId] = {
                 status: 'domado',
                 owner: buyer
@@ -56,7 +56,7 @@ const buyCommand = {
             await m.reply(`*${config.visuals.emoji3}* ¡Compra exitosa!\n\nHas adquirido a *${item.name}* por **¥${price.toLocaleString()}**.`);
 
             const sellerJid = seller.includes('@') ? seller : seller + '@s.whatsapp.net';
-            
+
             conn.sendMessage(sellerJid, { 
                 text: `*${config.visuals.emoji3}* ¡Tu personaje *${item.name}* ha sido vendido!\nRecibiste **¥${price.toLocaleString()}** en tu cartera.` 
             });
