@@ -1,8 +1,4 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const withdrawCommand = {
     name: 'withdraw',
@@ -14,39 +10,38 @@ const withdrawCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0];
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            const user = m.sender;
+            if (!global.db.data.users[user]) global.db.data.users[user] = { wallet: 0, bank: 0 };
+            const userDb = global.db.data.users[user];
 
-            if (!db[group]) db[group] = {};
-            if (!db[group][user]) {
-                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
-
-            const userData = db[group][user];
+            const bank = userDb.bank || 0;
             let amount = args[0];
 
             if (!amount) return m.reply(`*${config.visuals.emoji2}* \`FALTAN DATOS\`\n\nIngresa una cantidad o usa *all*.\n*Ejemplo:* #ret 5000`);
 
             if (amount.toLowerCase() === 'all') {
-                amount = userData.bank;
+                amount = bank;
             } else {
                 amount = parseInt(amount.replace(/[^0-9]/g, ''));
             }
 
             if (!amount || amount <= 0) return m.reply(`*${config.visuals.emoji2}* Cantidad inválida.`);
-            if (userData.bank < amount) return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en el banco.`);
+            if (bank < amount) return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en el banco.`);
 
-            userData.bank -= amount;
-            userData.wallet += amount;
-            db[group][user] = userData;
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
 
-            await conn.sendMessage(m.chat, { 
-                text: `*${config.visuals.emoji3}* \`RETIRO EXITOSO\` *${config.visuals.emoji3}*\n\n*${config.visuals.emoji4} Retirado:* ¥${amount.toLocaleString()}\n*${config.visuals.emoji} Cartera:* ¥${userData.wallet.toLocaleString()}\n\n> *Banco:* ¥${userData.bank.toLocaleString()}`
-            }, { quoted: m });
+            userDb.bank -= amount;
+            userDb.wallet += amount;
+
+            let texto = `*${config.visuals.emoji3}* \`RETIRO EXITOSO\` *${config.visuals.emoji3}*\n\n`;
+            texto += `*${config.visuals.emoji4} Retirado:* ¥${amount.toLocaleString()}\n`;
+            texto += `*${config.visuals.emoji} Cartera:* ¥${userDb.wallet.toLocaleString()}\n\n`;
+            texto += `> *Banco:* ¥${userDb.bank.toLocaleString()}`;
+
+            await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en el retiro.`);
         }
     }
