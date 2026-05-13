@@ -2,6 +2,8 @@ import { config } from '../config.js';
 import fs from 'fs-extra';
 import path from 'path';
 
+const rpgPath = path.resolve('./config/database/rpg/rpg.json');
+
 const menuCommand = {
     name: 'menu',
     alias: ['help', 'ayuda', 'menú', 'hel'],
@@ -51,10 +53,9 @@ const menuCommand = {
 
             const userGlobal = global.db.data.users[userJid] || {};
             const wallet = (userGlobal.wallet || 0) + (userGlobal.bank || 0);
-            
-            const groupData = global.db.data.chats[group] || {};
-            const userRpg = groupData.rpg?.[userJid] || {};
-            
+
+            const rpgDB = await fs.pathExists(rpgPath) ? await fs.readJson(rpgPath) : {};
+            const userRpg = rpgDB[group]?.[userShortId] || {};
             const rank = userRpg.rank || 'Novato de las Cuevas';
             const diamantes = userRpg.minerals?.diamantes || 0;
 
