@@ -28,7 +28,7 @@ export const config = {
         emoji2: '❁',
         emoji3: '✿',
         emoji4: '❀',
-        img1: 'https://files.catbox.moe/9ssbf9.jpg'
+        img1: 'https://upload.yotsuba.giize.com/u/VPpgV7Bn.jpeg'
     },
 
     apiKzm: 'kzm-AkpQk-lKhaizmu',
