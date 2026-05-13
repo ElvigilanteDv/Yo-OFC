@@ -1,6 +1,4 @@
 import { config } from '../config.js';
-import fs from 'fs-extra';
-import path from 'path';
 
 const shopCommand = {
     name: 'tienda',
@@ -11,23 +9,7 @@ const shopCommand = {
 
     run: async (conn, m) => {
         try {
-            const botNumber = conn.user.id.split(':')[0];
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
-            let settingsPath = '';
-
-            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
-                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
-                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            }
-
-            let displayShortName = config.botName;
-
-            if (settingsPath && fs.existsSync(settingsPath)) {
-                const localData = await fs.readJson(settingsPath);
-                if (localData.shortName) displayShortName = localData.shortName;
-            }
+            const displayShortName = conn.user.shortName || config.botName;
 
             const textoTienda = `*${config.visuals.emoji3}* \`TIENDA - ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n\n🛒 *ARTÍCULOS DISPONIBLES*\n\n1. 🧲 *Imán de Minas* (¥25,000)\n> Duplica recursos en tu próxima minería.\n\n2. 🍀 *Trébol de la Suerte* (¥40,000)\n> Evita fallos en tu próxima pesca.\n\n3. 🛡️ *Escudo de Mazmorra* (¥35,000)\n> Reduce el cooldown de mazmorra al 50%.\n\n4. 🧧 *Amuleto del Apostador* (¥60,000)\n> Sube el límite de apuesta en PPT a ¥30,000.\n\n---\n💡 *Uso:* #adquirir [número/nombre]`;
 
@@ -35,6 +17,7 @@ const shopCommand = {
                 text: textoTienda 
             }, { quoted: m });
         } catch (e) {
+            console.error(e);
             m.reply('✘ Error al acceder al mercado.');
         }
     }
