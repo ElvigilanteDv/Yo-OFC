@@ -11,25 +11,30 @@ const baltopCommand = {
         try {
             const usersData = global.db.data.users;
             if (!usersData || Object.keys(usersData).length === 0) {
-                return m.reply(`*${config.visuals.emoji2}* No hay registros de economía disponibles.`);
+                return m.reply(`*${config.visuals.emoji2}* No hay registros disponibles.`);
             }
 
             let page = args[0] ? parseInt(args[0]) : 1;
             if (isNaN(page) || page < 1) page = 1;
 
-            const users = Object.keys(usersData)
-                .map(jid => {
-                    const user = usersData[jid];
-                    const wallet = user.wallet || 0;
-                    const bank = user.bank || 0;
-                    return {
-                        jid,
-                        id: jid.split('@')[0].split(':')[0],
-                        total: wallet + bank,
-                        wallet,
-                        bank
+            const uniqueUsers = {};
+            
+            Object.keys(usersData).forEach(jid => {
+                const cleanJid = jid.replace(/:.*@/g, '@');
+                const user = usersData[jid];
+                const total = (user.wallet || 0) + (user.bank || 0);
+
+                if (!uniqueUsers[cleanJid] || total > uniqueUsers[cleanJid].total) {
+                    uniqueUsers[cleanJid] = {
+                        jid: cleanJid,
+                        id: cleanJid.split('@')[0],
+                        total: total,
+                        bank: user.bank || 0
                     };
-                })
+                }
+            });
+
+            const users = Object.values(uniqueUsers)
                 .filter(u => u.total > 0)
                 .sort((a, b) => b.total - a.total);
 
@@ -39,7 +44,7 @@ const baltopCommand = {
             const topUsers = users.slice(start, end);
 
             if (topUsers.length === 0) {
-                return m.reply(`*${config.visuals.emoji2}* No hay más usuarios en la página **${page}**.`);
+                return m.reply(`*${config.visuals.emoji2}* No hay más usuarios.`);
             }
 
             let list = `*${config.visuals.emoji3} BALANCE TOP - PÁGINA ${page} ${config.visuals.emoji3}*\n\n`;
@@ -49,8 +54,6 @@ const baltopCommand = {
                 list += `» *Total:* ¥${user.total.toLocaleString()}\n`;
                 list += `» *Banco:* ¥${user.bank.toLocaleString()}\n\n`;
             });
-
-            list += `> Sigue trabajando para llegar a la cima.`;
 
             await conn.sendMessage(m.chat, { 
                 text: list,
