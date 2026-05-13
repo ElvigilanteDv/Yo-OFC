@@ -56,7 +56,8 @@ global.db = {
     data: {
         chats: {},
         users: {},
-        characters: {}
+        characters: {},
+        settings: {}
     }
 };
 
@@ -189,10 +190,28 @@ async function startBot() {
 
         if (m.key.fromMe && !foundPrefix && !isNoPrefixCmd) return;
 
-        if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = { rolls: {} };
+        if (!global.db.data.chats[m.chat]) {
+            global.db.data.chats[m.chat] = { 
+                rolls: {},
+                rpg: {},
+                gacha: {}
+            };
+        }
+
+        if (!global.db.data.users[m.sender]) {
+            global.db.data.users[m.sender] = {
+                wallet: 0,
+                bank: 0,
+                daily: { lastClaim: 0, streak: 0 },
+                inventory: {},
+                marry: null,
+                genre: 'No definido',
+                birthday: { date: 'No definido', age: 'No definida' }
+            };
+        }
 
         global.lastMessageMap.set(m.sender, Date.now());
-        
+
         m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
 
         m.download = async () => {
