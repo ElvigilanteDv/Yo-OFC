@@ -10,7 +10,7 @@ const slutCommand = {
 
     run: async (conn, m) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const ahora = Date.now();
             const cooldown = 10 * 60 * 1000;
 
@@ -31,7 +31,7 @@ const slutCommand = {
             if (esPerdida) {
                 const frase = loseFrases[Math.floor(Math.random() * loseFrases.length)];
                 userDb.wallet = Math.max(0, (userDb.wallet || 0) - monto);
-                
+
                 let msg = `*${config.visuals.emoji2}* \`MALA NOCHE\`\n\n`;
                 msg += `${frase}\n`;
                 msg += `*Perdiste:* ¥${monto.toLocaleString()}\n\n`;
@@ -40,7 +40,7 @@ const slutCommand = {
             } else {
                 const frase = winFrases[Math.floor(Math.random() * winFrases.length)];
                 userDb.wallet = (userDb.wallet || 0) + monto;
-                
+
                 let msg = `*${config.visuals.emoji3}* \`NOCHE DE ÉXITO\` *${config.visuals.emoji3}*\n\n`;
                 msg += `${frase}\n`;
                 msg += `*Ganaste:* ¥${monto.toLocaleString()}\n\n`;
