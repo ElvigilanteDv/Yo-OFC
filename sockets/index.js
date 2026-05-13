@@ -12,6 +12,7 @@ import P from 'pino';
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
+import NodeCache from 'node-cache';
 import { socketLogger } from './print.js';
 import { pixelHandler } from '../pixel.js';
 import { config } from '../config.js';
@@ -19,6 +20,7 @@ import { config } from '../config.js';
 const sessionsPath = path.resolve('./sesiones_subbots');
 if (!fs.existsSync(sessionsPath)) fs.mkdirSync(sessionsPath, { recursive: true });
 
+const msgRetryCounterCache = new NodeCache();
 global.subBots = new Map();
 
 export const startSubBot = async (userId, mainConn = null) => {
@@ -37,105 +39,113 @@ export const startSubBot = async (userId, mainConn = null) => {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, P({ level: 'silent' })),
         },
-        browser: Browsers.macOS('Safari'), 
+        browser: Browsers.ubuntu('Chrome'), 
         markOnlineOnConnect: true,
-        shouldIgnoreJid: () => false
+        generateHighQualityLinkPreview: false,
+        msgRetryCounterCache,
+        defaultQueryTimeoutMs: undefined,
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 10000,
+        shouldIgnoreJid: jid => isNaN(jid.split('@')[0])
     });
 
     global.subBots.set(jid, sock);
-    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('creds.update', async () => {
+        await saveCreds();
+    });
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'close') {
             const code = lastDisconnect?.error?.output?.statusCode;
-            const shouldReconnect = code !== DisconnectReason.loggedOut;
-
-            if (shouldReconnect) {
-                console.log(chalk.yellow(`[SUB-BOT] Reconectando: ${userNumber}...`));
+            const reason = new Error(lastDisconnect?.error)?.message;
+            
+            if (code !== DisconnectReason.loggedOut) {
+                console.log(chalk.yellow(`[SUB-BOT] Reintentando conexión: ${userNumber} | Motivo: ${reason}`));
                 setTimeout(() => startSubBot(jid, mainConn), 5000);
             } else {
-                console.log(chalk.red(`[SUB-BOT] Sesión eliminada: ${userNumber}`));
+                console.log(chalk.red(`[SUB-BOT] Sesión cerrada permanentemente: ${userNumber}`));
                 global.subBots.delete(jid);
                 if (fs.existsSync(userSessionPath)) fs.rmSync(userSessionPath, { recursive: true, force: true });
             }
         } else if (connection === 'open') {
-            console.log(chalk.green(`[SUB-BOT] ✅ Conectado: ${userNumber}`));
+            console.log(chalk.green(`[SUB-BOT] ✅ Nodo Activo: ${userNumber}`));
         }
     });
 
     sock.ev.on('messages.upsert', async (chatUpdate) => {
-        let m = chatUpdate.messages[0];
-        if (!m || !m.message) return;
+        try {
+            if (chatUpdate.type !== 'notify') return;
+            let rawMsg = chatUpdate.messages[0];
+            if (!rawMsg.message) return;
+            if (rawMsg.key && rawMsg.key.remoteJid === 'status@broadcast') return;
 
-        m.chat = m.key.remoteJid;
-        m.sender = m.key.participant || m.key.remoteJid;
-        const isGroup = m.chat.endsWith('@g.us');
+            const m = smsg(sock, rawMsg);
+            
+            const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
+            const isRealOwner = m.sender.includes(realOwnerNumber) || m.key.fromMe;
 
-        const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
-        const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-        const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+            if (!m.isGroup && !isRealOwner) {
+                const prefixes = config.allPrefixes || ['#', '!', '.'];
+                const body = m.text || '';
+                const foundPrefix = prefixes.find(p => body.startsWith(p));
+                const commandName = foundPrefix 
+                    ? body.slice(foundPrefix.length).trim().split(/ +/).shift().toLowerCase()
+                    : body.trim().split(/ +/).shift().toLowerCase();
 
-        const body = (
-            m.message.conversation || 
-            m.message.extendedTextMessage?.text || 
-            m.message.imageMessage?.caption || 
-            m.message.videoMessage?.caption || ""
-        ).trim();
+                const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
+                if (!allowedPrivateCmds.includes(commandName)) return;
+            }
 
-        if (!isGroup && !isRealOwner) {
-            const prefixes = config.allPrefixes || ['#', '!', '.'];
-            const foundPrefix = prefixes.find(p => body.startsWith(p));
-            const commandName = foundPrefix 
-                ? body.slice(foundPrefix.length).trim().split(/ +/).shift().toLowerCase()
-                : body.trim().split(/ +/).shift().toLowerCase();
-
-            const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
-            if (!allowedPrivateCmds.includes(commandName)) return;
+            socketLogger(m, sock);
+            await pixelHandler(sock, m, config);
+            
+        } catch (err) {
+            console.error(chalk.red('[ERROR SUB-BOT]'), err);
         }
-
-        m.reply = (text) => sock.sendMessage(m.chat, { text }, { quoted: m });
-
-        m.download = async () => {
-            return await downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
-        };
-
-        const msgType = Object.keys(m.message)[0];
-        const msgContent = m.message[msgType];
-        const contextInfo = msgContent?.contextInfo;
-
-        if (contextInfo?.quotedMessage) {
-            const type = Object.keys(contextInfo.quotedMessage)[0];
-            const q = contextInfo.quotedMessage[type];
-            m.quoted = {
-                type, 
-                msg: q, 
-                id: contextInfo.stanzaId,
-                mimetype: q?.mimetype || '',
-                text: q?.text || q?.caption || contextInfo.quotedMessage.conversation || '',
-                key: {
-                    remoteJid: m.chat,
-                    fromMe: contextInfo.participant === sock.user.id.split(':')[0] + '@s.whatsapp.net',
-                    id: contextInfo.stanzaId,
-                    participant: contextInfo.participant
-                },
-                message: contextInfo.quotedMessage,
-                download: async () => {
-                    const quotedMsg = { message: contextInfo.quotedMessage };
-                    return await downloadMediaMessage(quotedMsg, 'buffer', {}, { logger: P({ level: 'silent' }) });
-                }
-            };
-        } else {
-            m.quoted = null;
-        }
-
-        socketLogger(m, sock);
-        await pixelHandler(sock, m, config);
     });
 
     return sock;
 };
+
+function smsg(conn, m) {
+    if (!m) return m;
+    let M = m.key;
+    if (M) {
+        m.chat = jidNormalizedUser(M.remoteJid);
+        m.fromMe = M.fromMe;
+        m.id = M.id;
+        m.isGroup = m.chat.endsWith('@g.us');
+        m.sender = jidNormalizedUser(m.fromMe ? conn.user.id : m.participant || m.key.participant || m.chat || '');
+    }
+    if (m.message) {
+        m.mtype = Object.keys(m.message)[0];
+        m.body = m.message.conversation || m.message[m.mtype]?.caption || m.message[m.mtype]?.text || (m.mtype === 'listResponseMessage') && m.message[m.mtype]?.singleSelectReply?.selectedRowId || (m.mtype === 'buttonsResponseMessage') && m.message[m.mtype]?.selectedButtonId || (m.mtype === 'templateButtonReplyMessage') && m.message[m.mtype]?.selectedId || m.message[m.mtype] || '';
+        m.text = typeof m.body === 'string' ? m.body : '';
+        
+        let quoted = m.message[m.mtype]?.contextInfo?.quotedMessage || null;
+        if (quoted) {
+            let qMtype = Object.keys(quoted)[0];
+            m.quoted = quoted[qMtype];
+            if (typeof m.quoted === 'string') m.quoted = { text: m.quoted };
+            m.quoted.mtype = qMtype;
+            m.quoted.id = m.message[m.mtype].contextInfo.stanzaId;
+            m.quoted.chat = jidNormalizedUser(m.message[m.mtype].contextInfo.remoteJid || m.chat);
+            m.quoted.isGroup = m.quoted.chat.endsWith('@g.us');
+            m.quoted.sender = jidNormalizedUser(m.message[m.mtype].contextInfo.participant);
+            m.quoted.fromMe = m.quoted.sender === jidNormalizedUser(conn.user && conn.user.id);
+            m.quoted.text = m.quoted.text || m.quoted.caption || m.quoted.contentText || '';
+            m.quoted.download = () => downloadMediaMessage({ message: quoted }, 'buffer', {}, { logger: P({ level: 'silent' }) });
+        } else {
+            m.quoted = null;
+        }
+    }
+    m.reply = (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
+    m.download = () => downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
+    return m;
+}
 
 export const loadAllSubBots = async (mainConn) => {
     if (!fs.existsSync(sessionsPath)) return;
@@ -144,7 +154,7 @@ export const loadAllSubBots = async (mainConn) => {
     for (const num of sessions) {
         if (num.includes('.') || isNaN(num)) continue; 
         const jid = `${num}@s.whatsapp.net`;
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         startSubBot(jid, mainConn);
     }
 };
