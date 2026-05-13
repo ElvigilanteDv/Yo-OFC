@@ -3,6 +3,8 @@ import path from 'path';
 
 export const config = {
     botName: 'Kazuma',
+    currency: 'Coins',
+    symbol: '¥',
     owner: [
         '18495029889@s.whatsapp.net', 
         '125860308893859@lid'
