@@ -1,59 +1,58 @@
 import { config } from '../config.js';
-import fs from 'fs';
-import path from 'path';
 import { winFrases, loseFrases } from './frases/slut.js';
-
-const dbPath = path.resolve('./config/database/economy/economy.json');
 
 const slutCommand = {
     name: 'slut',
     alias: ['prostituirse', 'escenario'],
     category: 'economy',
-    desc: 'Trabaja en el escenario para ganar coins, con un pequeño riesgo de tener una mala noche.',
+    desc: 'Trabaja en el escenario para ganar coins.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
-            const now = Date.now();
+            const user = m.sender;
+            const ahora = Date.now();
             const cooldown = 10 * 60 * 1000;
 
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            if (!global.db.data.users[user]) global.db.data.users[user] = {};
+            const userDb = global.db.data.users[user];
 
-            if (!db[group]) db[group] = {};
-            if (!db[group][user]) {
-                db[group][user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 }, slut: { lastUsed: 0 } };
-            }
-            if (!db[group][user].slut) db[group][user].slut = { lastUsed: 0 };
+            const tiempoPasado = ahora - (userDb.lastSlut || 0);
 
-            const userData = db[group][user];
-            const timePassed = now - userData.slut.lastUsed;
-
-            if (timePassed < cooldown) {
-                const rem = cooldown - timePassed;
-                return m.reply(`*${config.visuals.emoji2}* Espera ${Math.floor(rem / 60000)}m.`);
+            if (tiempoPasado < cooldown) {
+                const restante = Math.floor((cooldown - tiempoPasado) / 60000);
+                const segundos = Math.floor(((cooldown - tiempoPasado) % 60000) / 1000);
+                return m.reply(`*${config.visuals.emoji2}* \`AGOTAMIENTO\`\n\n> Necesitas descansar. Vuelve en **${restante}m ${segundos}s**.`);
             }
 
-            const isLoss = Math.random() < 0.03;
-            const amount = Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000;
+            const esPerdida = Math.random() < 0.03;
+            const monto = Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000;
 
-            if (isLoss) {
+            if (esPerdida) {
                 const frase = loseFrases[Math.floor(Math.random() * loseFrases.length)];
-                userData.wallet = Math.max(0, (userData.wallet || 0) - amount);
-                await m.reply(`*${config.visuals.emoji2}* \`MALA NOCHE\`\n\n${frase}\n*Perdiste:* ¥${amount.toLocaleString()}`);
+                userDb.wallet = Math.max(0, (userDb.wallet || 0) - monto);
+                
+                let msg = `*${config.visuals.emoji2}* \`MALA NOCHE\`\n\n`;
+                msg += `${frase}\n`;
+                msg += `*Perdiste:* ¥${monto.toLocaleString()}\n\n`;
+                msg += `> *Cartera:* ¥${userDb.wallet.toLocaleString()}`;
+                await m.reply(msg);
             } else {
                 const frase = winFrases[Math.floor(Math.random() * winFrases.length)];
-                userData.wallet = (userData.wallet || 0) + amount;
-                await m.reply(`*${config.visuals.emoji3}* \`NOCHE DE ÉXITO\`\n\n${frase}\n*Ganaste:* ¥${amount.toLocaleString()}`);
+                userDb.wallet = (userDb.wallet || 0) + monto;
+                
+                let msg = `*${config.visuals.emoji3}* \`NOCHE DE ÉXITO\` *${config.visuals.emoji3}*\n\n`;
+                msg += `${frase}\n`;
+                msg += `*Ganaste:* ¥${monto.toLocaleString()}\n\n`;
+                msg += `> *Cartera:* ¥${userDb.wallet.toLocaleString()}`;
+                await m.reply(msg);
             }
 
-            userData.slut.lastUsed = now; 
-            db[group][user] = userData;
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf-8');
+            userDb.lastSlut = ahora;
 
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error en la discoteca.`);
+            console.error(e);
+            m.reply(`*${config.visuals.emoji2}* Error en la función.`);
         }
     }
 };
