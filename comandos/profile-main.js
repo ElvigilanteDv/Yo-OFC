@@ -1,13 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { config } from '../config.js';
-
-const genrePath = path.resolve('./config/database/profile/genres.json');
-const marryPath = path.resolve('./config/database/profile/casados.json');
-const ecoPath = path.resolve('./config/database/economy/economy.json');
-const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const birthPath = path.resolve('./config/database/profile/birthdays.json');
-const rpgPath = path.resolve('./config/database/rpg/rpg.json');
 
 const profileCommand = {
     name: 'profile',
@@ -18,38 +9,37 @@ const profileCommand = {
 
     run: async (conn, m) => {
         try {
-            let targetJid = m.sender;
+            let rawTarget = m.sender;
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
-                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+                rawTarget = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
+                rawTarget = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const user = targetJid.split('@')[0].split(':')[0];
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
+            const userShortId = targetJid.split('@')[0];
             const group = m.chat;
+
+            const userGlobal = global.db.data.users[targetJid] || {};
+            const groupData = global.db.data.chats[group] || {};
+            const userRpg = groupData.rpg?.[targetJid] || { minerals: {}, rank: 'Novato de las Cuevas' };
+            const userGacha = groupData.gacha || {};
+
+            const genero = userGlobal.genre || 'No definido';
+            const age = userGlobal.birthday?.age || 'No definida';
+            const cumple = userGlobal.birthday?.date || 'No definido';
+            const parejaJid = userGlobal.marry ? userGlobal.marry.replace(/:.*@/g, '@') : null;
+            const pareja = parejaJid ? `@${parejaJid.split('@')[0]}` : 'Soltero/a';
+
             const mentions = [targetJid];
+            if (parejaJid) mentions.push(parejaJid);
 
-            const genres = fs.existsSync(genrePath) ? JSON.parse(fs.readFileSync(genrePath, 'utf-8')) : {};
-            const casados = fs.existsSync(marryPath) ? JSON.parse(fs.readFileSync(marryPath, 'utf-8')) : {};
-            const ecoDB = fs.existsSync(ecoPath) ? JSON.parse(fs.readFileSync(ecoPath, 'utf-8')) : {};
-            const gachaDB = fs.existsSync(gachaPath) ? JSON.parse(fs.readFileSync(gachaPath, 'utf-8')) : {};
-            const birthDB = fs.existsSync(birthPath) ? JSON.parse(fs.readFileSync(birthPath, 'utf-8')) : {};
-            const rpgDB = fs.existsSync(rpgPath) ? JSON.parse(fs.readFileSync(rpgPath, 'utf-8')) : {};
+            const wallet = Number(userGlobal.wallet) || 0;
+            const bank = Number(userGlobal.bank) || 0;
 
-            const genero = genres[user] || 'No definido';
-            const pareja = casados[user] ? `@${casados[user]}` : 'Soltero/a';
-            const edad = birthDB[user]?.age || 'No definida';
-            const cumple = birthDB[user]?.birth || 'No definido';
-
-            if (casados[user]) mentions.push(casados[user] + '@s.whatsapp.net');
-
-            const wallet = Number(ecoDB[user]?.wallet) || 0;
-            const bank = Number(ecoDB[user]?.bank) || 0;
-
-            const userPjs = Object.values(gachaDB).filter(pj => pj.owner === user);
+            const userPjs = Object.values(userGacha).filter(pj => pj.owner && pj.owner.replace(/:.*@/g, '@') === targetJid);
             const totalPjs = userPjs.length;
 
-            const userRpg = rpgDB[group]?.[user] || { minerals: {}, rank: 'Novato de las Cuevas' };
             const rank = userRpg.rank || 'Novato de las Cuevas';
             const minerals = userRpg.minerals || {};
 
@@ -61,9 +51,9 @@ const profileCommand = {
             }
 
             let txt = `*${config.visuals.emoji3} \`PERFIL DE USUARIO\` ${config.visuals.emoji3}*\n\n`;
-            txt += `*✿︎ Usuario:* @${user}\n\n`;
+            txt += `*✿︎ Usuario:* @${userShortId}\n\n`;
             txt += `*✿︎ Género:* ${genero}\n`;
-            txt += `*✿︎ Edad:* ${edad}\n`;
+            txt += `*✿︎ Edad:* ${age}\n`;
             txt += `*✿︎ Cumpleaños:* ${cumple}\n`;
             txt += `*✿︎ Pareja:* ${pareja}\n\n`;
             
@@ -89,6 +79,7 @@ const profileCommand = {
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al cargar el perfil.`);
         }
     }
