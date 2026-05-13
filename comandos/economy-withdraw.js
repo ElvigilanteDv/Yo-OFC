@@ -10,7 +10,8 @@ const withdrawCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
+            
             if (!global.db.data.users[user]) global.db.data.users[user] = { wallet: 0, bank: 0 };
             const userDb = global.db.data.users[user];
 
@@ -28,10 +29,8 @@ const withdrawCommand = {
             if (!amount || amount <= 0) return m.reply(`*${config.visuals.emoji2}* Cantidad inválida.`);
             if (bank < amount) return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en el banco.`);
 
-            if (typeof userDb.wallet === 'undefined') userDb.wallet = 0;
-
-            userDb.bank -= amount;
-            userDb.wallet += amount;
+            userDb.bank = (userDb.bank || 0) - amount;
+            userDb.wallet = (userDb.wallet || 0) + amount;
 
             let texto = `*${config.visuals.emoji3}* \`RETIRO EXITOSO\` *${config.visuals.emoji3}*\n\n`;
             texto += `*${config.visuals.emoji4} Retirado:* ¥${amount.toLocaleString()}\n`;
