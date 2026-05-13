@@ -3,7 +3,7 @@ import path from 'path';
 import { config } from '../config.js';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const shopPath = path.resolve('./config/database/gacha/gacha_shop.json');
+const baseGroup = "120363423871589037@g.us";
 
 const givePjCommand = {
     name: 'givechar',
@@ -16,49 +16,52 @@ const givePjCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const giver = m.sender.split('@')[0].split(':')[0];
+            const giver = m.sender;
             const pjId = args[0];
-            
+
             let targetJid = m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null);
 
             if (!pjId || !targetJid) {
                 return m.reply(`*${config.visuals.emoji2}* \`Uso Incorrecto\`\n\nIndica el ID y menciona al destinatario.\n> Ejemplo: #givepj 123 @usuario`);
             }
 
-            const receiver = targetJid.split('@')[0].split(':')[0];
-            if (giver === receiver) return m.reply(`*${config.visuals.emoji2}* No tiene sentido regalarte algo a ti mismo.`);
+            if (giver === targetJid) return m.reply(`*${config.visuals.emoji2}* No tiene sentido regalarte algo a ti mismo.`);
 
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: DB Gacha no encontrada.`);
-            let gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const plantillaPersonajes = rawData[baseGroup];
 
-            if (!gachaDB[group] || !gachaDB[group][pjId]) {
-                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe en este grupo.`);
+            if (!plantillaPersonajes[pjId]) {
+                return m.reply(`*${config.visuals.emoji2}* El personaje con ID \`${pjId}\` no existe.`);
             }
 
-            const pj = gachaDB[group][pjId];
-            if (pj.owner !== giver) {
+            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
+            const dbGrupoGacha = global.db.data.chats[group].gacha;
+
+            const pjInfoGrupo = dbGrupoGacha[pjId];
+
+            if (!pjInfoGrupo || pjInfoGrupo.owner !== giver) {
                 return m.reply(`*${config.visuals.emoji2}* ¡Ese personaje no te pertenece!`);
             }
 
-            gachaDB[group][pjId].owner = receiver;
-            gachaDB[group][pjId].status = 'domado';
+            dbGrupoGacha[pjId].owner = targetJid;
+            dbGrupoGacha[pjId].status = 'domado';
 
-            if (fs.existsSync(shopPath)) {
-                let shopDB = JSON.parse(fs.readFileSync(shopPath, 'utf-8'));
-                if (shopDB[group] && shopDB[group][pjId]) {
-                    delete shopDB[group][pjId];
-                    fs.writeFileSync(shopPath, JSON.stringify(shopDB, null, 2));
-                }
+            if (global.db.data.chats[group].shop && global.db.data.chats[group].shop[pjId]) {
+                delete global.db.data.chats[group].shop[pjId];
             }
 
-            fs.writeFileSync(gachaPath, JSON.stringify(gachaDB, null, 2));
+            const giverId = giver.split('@')[0];
+            const receiverId = targetJid.split('@')[0];
+            const pjNombre = plantillaPersonajes[pjId].name;
 
             await conn.sendMessage(m.chat, { 
-                text: `*${config.visuals.emoji3} \`TRANSFERENCIA EXITOSA\` ${config.visuals.emoji3}*\n\n@${giver} ha cedido a *${pj.name}* a @${receiver}.\n\n> ¡El harem de @${receiver} acaba de crecer!`,
-                mentions: [m.sender, targetJid]
+                text: `*${config.visuals.emoji3} \`TRANSFERENCIA EXITOSA\` ${config.visuals.emoji3}*\n\n@${giverId} ha cedido a *${pjNombre}* a @${receiverId}.\n\n> ¡El harem de @${receiverId} acaba de crecer!`,
+                mentions: [giver, targetJid]
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al procesar la donación.`);
         }
     }
