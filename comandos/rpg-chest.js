@@ -1,12 +1,6 @@
 import { config } from '../config.js';
 import { chestPhrases } from './frases/rpg/chest.js';
-import fs from 'fs-extra';
-import path from 'path';
 import { checkRankUpdate } from './rpg-avisos.js';
-
-const rpgDbPath = path.resolve('./config/database/rpg/rpg.json');
-const economyDbPath = path.resolve('./config/database/economy/economy.json');
-const invPath = path.resolve('./config/database/economy/inventory.json');
 
 const chestCommand = {
     name: 'cofre',
@@ -17,50 +11,27 @@ const chestCommand = {
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
+            const groupJid = m.chat;
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            
+            const userDb = global.db.data.users[userJid];
+            const chatDb = global.db.data.chats[groupJid];
 
-            if (!fs.existsSync(invPath)) fs.outputJsonSync(invPath, {});
-            let invDb = await fs.readJson(invPath);
-
-            const tieneEscudo = invDb[user]?.escudo > 0;
-            const cooldown = tieneEscudo ? 5 * 60 * 1000 : 10 * 60 * 1000; 
-
-            const botNumber = conn.user.id.split(':')[0];
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
-            let settingsPath = '';
-
-            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
-                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
-                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            }
-
-            let displayShortName = config.botName;
-
-            if (settingsPath && fs.existsSync(settingsPath)) {
-                const localData = await fs.readJson(settingsPath);
-                if (localData.shortName) displayShortName = localData.shortName;
-            }
-
-            if (!fs.existsSync(rpgDbPath)) fs.outputJsonSync(rpgDbPath, {});
-            if (!fs.existsSync(economyDbPath)) fs.outputJsonSync(economyDbPath, {});
-
-            let rpgDb = await fs.readJson(rpgDbPath);
-            let ecoDb = await fs.readJson(economyDbPath);
-
-            if (!rpgDb[group]) rpgDb[group] = {};
-            if (!rpgDb[group][user]) {
-                rpgDb[group][user] = { 
+            if (!chatDb.rpg) chatDb.rpg = {};
+            if (!chatDb.rpg[userJid]) {
+                chatDb.rpg[userJid] = { 
                     minerals: { diamantes: 0, rubies: 0, esmeraldas: 0, zafiros: 0, amatistas: 0, perlas: 0, oro: 0 }, 
                     lastChest: 0,
                     rank: 'Novato de las Cuevas'
                 };
             }
 
+            const userData = chatDb.rpg[userJid];
+            const tieneEscudo = userDb.inventory?.escudo > 0;
+            const cooldown = tieneEscudo ? 5 * 60 * 1000 : 10 * 60 * 1000; 
+
             const now = Date.now();
-            const timePassed = now - (rpgDb[group][user].lastChest || 0);
+            const timePassed = now - (userData.lastChest || 0);
 
             if (timePassed < cooldown) {
                 const timeLeft = cooldown - timePassed;
@@ -70,8 +41,7 @@ const chestCommand = {
             }
 
             if (tieneEscudo) {
-                invDb[user].escudo -= 1;
-                await fs.writeJson(invPath, invDb, { spaces: 2 });
+                userDb.inventory.escudo -= 1;
             }
 
             const rewards = {
@@ -89,28 +59,21 @@ const chestCommand = {
 
             for (let key in rewards) {
                 if (key !== 'coins') {
-                    rpgDb[group][user].minerals[key] = (rpgDb[group][user].minerals[key] || 0) + rewards[key];
+                    userData.minerals[key] = (userData.minerals[key] || 0) + rewards[key];
                 }
             }
-            rpgDb[group][user].lastChest = now;
+            userData.lastChest = now;
+            userDb.wallet = (userDb.wallet || 0) + rewards.coins;
 
-            if (!ecoDb[user]) {
-                ecoDb[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
-            ecoDb[user].wallet = (ecoDb[user].wallet || 0) + rewards.coins;
+            await checkRankUpdate(conn, m, userJid, groupJid);
 
-            await checkRankUpdate(conn, m, user, group, rpgDb);
-
-            await fs.writeJson(rpgDbPath, rpgDb, { spaces: 2 });
-            await fs.writeJson(economyDbPath, ecoDb, { spaces: 2 });
-
+            const displayShortName = conn.user.shortName || config.botName;
             const textoExito = `*${config.visuals.emoji3}* \`COFRE ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n${tieneEscudo ? '🛡️ *¡ESCUDO ACTIVADO!* Tiempo de espera reducido.\n' : ''}\n${randomPhrase}\n\n💎 *Diamantes:* ${rewards.diamantes}\n🌹 *Rubíes:* ${rewards.rubies}\n🍃 *Esmeraldas:* ${rewards.esmeraldas}\n🔹 *Zafiros:* ${rewards.zafiros}\n🔮 *Amatistas:* ${rewards.amatistas}\n⚪ *Perlas:* ${rewards.perlas}\n📀 *Oro:* ${rewards.oro}\n\n💰 *Extra:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El mar siempre tiene tesoros para quienes saben buscar!`;
 
-            await conn.sendMessage(m.chat, { 
-                text: textoExito 
-            }, { quoted: m });
+            await conn.sendMessage(m.chat, { text: textoExito }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al abrir el cofre.`);
         }
     }
