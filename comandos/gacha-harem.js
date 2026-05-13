@@ -7,7 +7,7 @@ const baseGroup = "120363423871589037@g.us";
 
 const haremCommand = {
     name: 'harem',
-    alias: ['inventario', 'mis-pjs'],
+    alias: ['mis-pjs'],
     category: 'gacha',
     desc: 'Visualiza la colección de personajes que has reclamado en este grupo.',
     noPrefix: true,
