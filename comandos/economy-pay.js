@@ -9,10 +9,12 @@ const payCommand = {
 
     run: async (conn, m, args) => {
         try {
-            const sender = m.sender;
-            let targetJid = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
+            const sender = m.sender.replace(/:.*@/g, '@');
+            let rawTarget = m.quoted ? m.quoted.key.participant || m.quoted.key.remoteJid : m.mentionedJid?.[0];
 
-            if (!targetJid) return m.reply(`*${config.visuals.emoji2}* Responde al mensaje de alguien o menciónalo.`);
+            if (!rawTarget) return m.reply(`*${config.visuals.emoji2}* Responde al mensaje de alguien o menciónalo.`);
+            const targetJid = rawTarget.replace(/:.*@/g, '@');
+
             if (sender === targetJid) return m.reply(`*${config.visuals.emoji2}* No puedes enviarte dinero a ti mismo.`);
 
             let amount = parseInt(args[0]?.replace(/[^0-9]/g, ''));
@@ -31,8 +33,8 @@ const payCommand = {
             senderDb.bank -= amount;
             receiverDb.bank = (receiverDb.bank || 0) + amount;
 
-            const senderId = sender.split('@')[0].split(':')[0];
-            const receiverId = targetJid.split('@')[0].split(':')[0];
+            const senderId = sender.split('@')[0];
+            const receiverId = targetJid.split('@')[0];
 
             let texto = `*${config.visuals.emoji3}* \`TRANSFERENCIA BANCARIA\` *${config.visuals.emoji3}*\n\n`;
             texto += `*De:* @${senderId}\n`;
