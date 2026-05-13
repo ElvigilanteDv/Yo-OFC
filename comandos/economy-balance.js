@@ -32,8 +32,8 @@ const balanceCommand = {
             let texto = `*${config.visuals.emoji3} BALANCE DE CUENTA ${config.visuals.emoji3}*\n\n`;
             texto += `» *Cartera:* ¥${wallet.toLocaleString()}\n`;
             texto += `» *Banco:* ¥${bank.toLocaleString()}\n\n`;
-            texto += `» *Total:* ¥${total.toLocaleString()}\n`;
-            texto += `» *Usuario:* @${userId}`;
+            texto += `> *Total:* ¥${total.toLocaleString()}\n`;
+            texto += `> *Usuario:* @${userId}`;
 
             await conn.sendMessage(m.chat, { 
                 text: texto, 
