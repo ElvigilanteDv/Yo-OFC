@@ -54,7 +54,7 @@ const dailyCommand = {
             userDb.daily.lastClaim = ahora;
 
             let texto = `*${config.visuals.emoji3}* \`RECOMPENSA DIARIA\` *${config.visuals.emoji3}*\n\n`;
-            texto += `¡Has reclamado tu recompensa del **Día ${userDb.daily.streak}**!\n`;
+            texto += `¡Has reclamado tu recompensa del *Día ${userDb.daily.streak}*!\n`;
             texto += `*${config.visuals.emoji} Ganaste:* ¥${recompensa.toLocaleString()}\n`;
             texto += `*${config.visuals.emoji4} Racha actual:* ${userDb.daily.streak} días\n\n`;
             texto += `> *Cartera:* ¥${userDb.wallet.toLocaleString()}`;
