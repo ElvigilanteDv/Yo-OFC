@@ -1,8 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { config } from '../config.js';
-
-const dbPath = path.resolve('./config/database/profile/birthdays.json');
 
 const setBirth = {
     name: 'setbirth',
@@ -13,11 +9,11 @@ const setBirth = {
 
     run: async (conn, m, args) => {
         try {
-            const user = m.sender.split('@')[0].split(':')[0];
-            if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify({}));
-            let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            if (!global.db.data.users[userJid]) global.db.data.users[userJid] = {};
+            const userDb = global.db.data.users[userJid];
 
-            if (!args[0]) return m.reply(`*${config.visuals.emoji2} \`FALTAN DATOS\` ${config.visuals.emoji2}*\n\nUso: #setbirth DD/MM/AAAA\n\n> ¡Registra tu origen en la matriz!`);
+            if (!args[0]) return m.reply(`*${config.visuals.emoji2} \`FALTAN DATOS\` ${config.visuals.emoji2}*\n\nUso: #setbirth DD/MM/AAAA`);
 
             const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
             const match = args[0].match(regex);
@@ -30,11 +26,14 @@ const setBirth = {
 
             if (age < 8 || age > 85) return m.reply(`*${config.visuals.emoji2} \`RANGO INVÁLIDO\` ${config.visuals.emoji2}*\n\nSolo de 8 a 85 años.`);
 
-            db[user] = { birth: `${day}/${month}/${year}`, age: age };
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            userDb.birthday = { 
+                date: `${day}/${month}/${year}`, 
+                age: age 
+            };
 
             m.reply(`*${config.visuals.emoji3} \`CRONOLOGÍA FIJADA\` ${config.visuals.emoji3}*\n\nFecha: *${day}/${month}/${year}*\nEdad: *${age} años*\n\n> ¡Tu lugar en el tiempo ha sido asegurado!`);
         } catch (e) {
+            console.error(e);
             m.reply('✘ Error en la matriz de tiempo.');
         }
     }
