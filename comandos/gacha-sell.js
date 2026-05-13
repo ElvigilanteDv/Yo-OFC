@@ -16,7 +16,7 @@ const sellCommand = {
     run: async (conn, m, args) => {
         try {
             const group = m.chat;
-            const user = m.sender;
+            const user = m.sender.replace(/:.*@/g, '@');
             const pjId = args[0];
             const price = parseInt(args[1]);
 
@@ -37,7 +37,7 @@ const sellCommand = {
 
             const pjInfo = dbGrupoGacha[pjId];
 
-            if (!pjInfo || pjInfo.owner !== user) {
+            if (!pjInfo || pjInfo.owner.replace(/:.*@/g, '@') !== user) {
                 return m.reply(`*${config.visuals.emoji2}* ¡Este personaje no te pertenece!`);
             }
 
@@ -49,7 +49,7 @@ const sellCommand = {
             }
 
             if (!global.db.data.chats[group].shop) global.db.data.chats[group].shop = {};
-            
+
             global.db.data.chats[group].shop[pjId] = {
                 id: pjId,
                 name: pjPlantilla.name,
