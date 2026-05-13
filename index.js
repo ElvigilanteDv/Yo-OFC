@@ -5,8 +5,6 @@ import {
     makeCacheableSignalKeyStore, 
     DisconnectReason,
     Browsers,
-    jidDecode,
-    downloadContentFromMessage,
     downloadMediaMessage
 } from '@whiskeysockets/baileys';
 import P from 'pino';
@@ -43,11 +41,16 @@ if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 setInterval(() => {
     try {
         const files = fs.readdirSync(tmpDir);
+        const now = Date.now();
         for (const file of files) {
-            fs.unlinkSync(path.join(tmpDir, file));
+            const filePath = path.join(tmpDir, file);
+            const stat = fs.statSync(filePath);
+            if (now - stat.mtimeMs > 5 * 60 * 1000) {
+                fs.unlinkSync(filePath);
+            }
         }
     } catch (e) {}
-}, 5 * 60 * 1000);
+}, 60 * 1000);
 
 global.db = {
     data: {
@@ -63,16 +66,16 @@ global.loadCommands = async () => {
     global.commands.clear();
     const files = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-    for (const file of files) {
+    await Promise.all(files.map(async (file) => {
         try {
             const filePath = path.join(commandsPath, file);
             const fileUrl = pathToFileURL(filePath).href;
             const module = await import(`${fileUrl}?update=${Date.now()}`);
             if (module.default && module.default.name) {
-                global.commands.set(module.default.name, module.default);
+                global.commands.set(module.default.name.toLowerCase(), module.default);
             }
         } catch (e) {}
-    }
+    }));
 };
 
 async function startBot() {
@@ -93,6 +96,7 @@ async function startBot() {
         browser: Browsers.ubuntu('Chrome'),
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
+        syncFullHistory: false,
         getMessage: async (key) => { return null }
     });
 
@@ -105,12 +109,12 @@ async function startBot() {
 
     if (!conn.authState.creds.registered) {
         setTimeout(async () => {
-            let input = await question(chalk.cyan('\n  [?] Introduce tu número:\n  > '));
+            let input = await question(chalk.cyan('\n  [?] Introduce tu número con código de país:\n  > '));
             let phoneNumber = input.replace(/[^0-9]/g, '');
             try {
                 let code = await conn.requestPairingCode(phoneNumber);
                 code = code?.match(/.{1,4}/g)?.join('-') || code;
-                console.log(chalk.black.bgCyan(`\n  CODIGO: ${code}  \n`));
+                console.log(chalk.black.bgCyan(`\n  CODIGO DE VINCULACIÓN: ${code}  \n`));
             } catch (error) {
                 console.error('Error al generar código:', error);
             }
@@ -124,10 +128,8 @@ async function startBot() {
 
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
-            console.log(chalk.yellow(`[CONEXIÓN] Cerrada. Razón: ${reason}. Reintentando...`));
-
             if (reason === DisconnectReason.loggedOut) {
-                console.log(chalk.red('[!] Sesión cerrada. Elimina la carpeta sesion_bot y vincula de nuevo.'));
+                console.log(chalk.red('[!] Sesión cerrada. Elimina la carpeta sesion_bot.'));
                 process.exit();
             } else {
                 setTimeout(() => startBot(), 5000);
@@ -135,24 +137,22 @@ async function startBot() {
         } else if (connection === 'open') {
             process.stdout.write('\x1Bc');
             CFonts.say('KAZUMA', { font: 'block', align: 'center', colors: ['cyan', 'magenta'] });
-            console.log(chalk.greenBright.bold('\n  [✨] ¡KAZUMA CONECTADO!'));
-            startTime = Date.now();
+            console.log(chalk.greenBright.bold(`\n  [✨] ¡KAZUMA CONECTADO!\n  [⌚] Tiempo de carga: ${((Date.now() - startTime) / 1000).toFixed(2)}s`));
             await loadAllSubBots(conn);
             await loadAllMoodBots(conn);
         }
     });
 
     conn.ev.on('messages.upsert', async (chatUpdate) => {
-        let m = chatUpdate.messages[0];
+        const m = chatUpdate.messages[0];
         if (!m || !m.message) return;
+        if (m.key.remoteJid === 'status@broadcast') return;
 
         const messageTimestamp = (m.messageTimestamp?.low || m.messageTimestamp || Date.now()) * 1000;
-        const timeDiff = (Date.now() - messageTimestamp) / 1000;
-
-        if (timeDiff > 1800) return;
+        if ((Date.now() - messageTimestamp) > 180000) return;
 
         m.chat = m.key.remoteJid;
-        m.sender = m.key.participant || m.key.remoteJid;
+        m.sender = conn.decodeJid ? conn.decodeJid(m.key.participant || m.key.remoteJid) : (m.key.participant || m.key.remoteJid);
         const isGroup = m.chat.endsWith('@g.us');
 
         const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
@@ -163,16 +163,17 @@ async function startBot() {
             m.message.conversation || 
             m.message.extendedTextMessage?.text || 
             m.message.imageMessage?.caption || 
-            m.message.videoMessage?.caption || ""
+            m.message.videoMessage?.caption || 
+            m.message.buttonsResponseMessage?.selectedButtonId || 
+            m.message.listResponseMessage?.singleSelectReply?.selectedRowId || 
+            m.message.templateButtonReplyMessage?.selectedId || ""
         ).trim();
 
         const prefixes = config.allPrefixes || ['#', '!', '.'];
         const foundPrefix = prefixes.find(p => body.startsWith(p));
         const usedPrefix = foundPrefix || '';
 
-        const commandName = foundPrefix 
-            ? body.slice(foundPrefix.length).trim().split(/ +/).shift().toLowerCase()
-            : body.trim().split(/ +/).shift().toLowerCase();
+        const commandName = body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase();
 
         if (!isGroup && !isRealOwner) {
             const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
@@ -191,7 +192,8 @@ async function startBot() {
         if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = { rolls: {} };
 
         global.lastMessageMap.set(m.sender, Date.now());
-        m.reply = (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
+        
+        m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
 
         m.download = async () => {
             return await downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
@@ -212,7 +214,7 @@ async function startBot() {
                 text: q?.text || q?.caption || contextInfo.quotedMessage.conversation || '',
                 key: {
                     remoteJid: m.chat,
-                    fromMe: contextInfo.participant === conn.user.id.split(':')[0] + '@s.whatsapp.net',
+                    fromMe: contextInfo.participant === (conn.user.id.split(':')[0] + '@s.whatsapp.net'),
                     id: contextInfo.stanzaId,
                     participant: contextInfo.participant
                 },
