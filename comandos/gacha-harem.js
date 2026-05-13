@@ -3,6 +3,7 @@ import path from 'path';
 import { config } from '../config.js';
 
 const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
+const baseGroup = "120363423871589037@g.us";
 
 const haremCommand = {
     name: 'harem',
@@ -31,29 +32,36 @@ const haremCommand = {
                 targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const targetId = targetJid.split('@')[0].split(':')[0];
+            const targetId = targetJid;
             const isMe = targetJid === m.sender;
 
             if (!fs.existsSync(gachaPath)) return m.reply(`*${config.visuals.emoji2}* Error: Base de datos no encontrada.`);
-            const gachaDB = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const rawData = JSON.parse(fs.readFileSync(gachaPath, 'utf-8'));
+            const plantillaPersonajes = rawData[baseGroup];
 
-            if (!gachaDB[group]) {
+            if (!global.db.data.chats[group].gacha) {
                 return m.reply(`*${config.visuals.emoji2}* No hay registros de personajes en este grupo.`);
             }
 
+            const dbGrupoGacha = global.db.data.chats[group].gacha;
             let misPjs = [];
-            for (let id in gachaDB[group]) {
-                if (gachaDB[group][id].owner === targetId) {
-                    misPjs.push({ ...gachaDB[group][id], id_db: id });
+
+            for (let id in dbGrupoGacha) {
+                if (dbGrupoGacha[id].owner === targetId && plantillaPersonajes[id]) {
+                    misPjs.push({
+                        ...plantillaPersonajes[id],
+                        id_db: id
+                    });
                 }
             }
 
             if (misPjs.length === 0) {
+                const mentionId = targetJid.split('@')[0];
                 if (isMe) {
                     return m.reply(`*${config.visuals.emoji2}* Aún no tienes personajes reclamados en tu inventario de este grupo.\n\n> ¡Usa el comando #rw y luego #c para conseguir personajes épicos!`);
                 } else {
                     return conn.sendMessage(m.chat, { 
-                        text: `*${config.visuals.emoji2}* El usuario @${targetId} no tiene personajes reclamados en este grupo.\n\n> ¡Se recomienda el comando #rw para conseguir!`,
+                        text: `*${config.visuals.emoji2}* El usuario @${mentionId} no tiene personajes reclamados en este grupo.\n\n> ¡Se recomienda el comando #rw para conseguir!`,
                         mentions: [targetJid]
                     }, { quoted: m });
                 }
@@ -72,8 +80,9 @@ const haremCommand = {
             const end = start + itemsPerPage;
             const currentPjs = misPjs.slice(start, end);
 
+            const mentionId = targetJid.split('@')[0];
             let txt = `*${config.visuals.emoji3} \`HAREM DEL USUARIO\` ${config.visuals.emoji3}*\n`;
-            txt += `» @${targetId} (${misPjs.length} personajes)\n`;
+            txt += `» @${mentionId} (${misPjs.length} personajes)\n`;
             txt += `*Página:* ${page} de ${totalPages}\n\n`;
 
             currentPjs.forEach((pj) => {
@@ -88,6 +97,7 @@ const haremCommand = {
             }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error al mostrar el harem.`);
         }
     }
