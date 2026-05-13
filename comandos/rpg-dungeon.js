@@ -1,11 +1,5 @@
 import { config } from '../config.js';
-import fs from 'fs-extra';
-import path from 'path';
 import { checkRankUpdate } from './rpg-avisos.js';
-
-const rpgDbPath = path.resolve('./config/database/rpg/rpg.json');
-const dungeonDbPath = path.resolve('./config/database/rpg/dungeon.json');
-const economyDbPath = path.resolve('./config/database/economy/economy.json');
 
 const dungeonCommand = {
     name: 'mazmorra',
@@ -16,46 +10,27 @@ const dungeonCommand = {
 
     run: async (conn, m) => {
         try {
-            const group = m.chat;
-            const user = m.sender.split('@')[0].split(':')[0];
-            const cooldown = 15 * 60 * 1000; 
+            const groupJid = m.chat;
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            
+            const userDb = global.db.data.users[userJid];
+            const chatDb = global.db.data.chats[groupJid];
 
-            const botNumber = conn.user.id.split(':')[0];
-            const subSessionsPath = path.resolve('./sesiones_subbots');
-            const moodSessionsPath = path.resolve('./sesiones_moods');
-            let settingsPath = '';
-
-            if (fs.existsSync(path.join(subSessionsPath, botNumber))) {
-                settingsPath = path.join(subSessionsPath, botNumber, 'settings.json');
-            } else if (fs.existsSync(path.join(moodSessionsPath, botNumber))) {
-                settingsPath = path.join(moodSessionsPath, botNumber, 'settings.json');
-            }
-
-            let displayShortName = config.botName;
-
-            if (settingsPath && fs.existsSync(settingsPath)) {
-                const localData = await fs.readJson(settingsPath);
-                if (localData.shortName) displayShortName = localData.shortName;
-            }
-
-            if (!fs.existsSync(rpgDbPath)) fs.outputJsonSync(rpgDbPath, {});
-            if (!fs.existsSync(dungeonDbPath)) fs.outputJsonSync(dungeonDbPath, {});
-            if (!fs.existsSync(economyDbPath)) fs.outputJsonSync(economyDbPath, {});
-
-            let rpgDb = await fs.readJson(rpgDbPath);
-            let dungeonDb = await fs.readJson(dungeonDbPath);
-            let ecoDb = await fs.readJson(economyDbPath);
-
-            if (!dungeonDb[group]) dungeonDb[group] = {};
-            if (!dungeonDb[group][user]) {
-                dungeonDb[group][user] = { 
+            if (!chatDb.rpg) chatDb.rpg = {};
+            if (!chatDb.rpg[userJid]) {
+                chatDb.rpg[userJid] = { 
                     materials: { hierro: 0, obsidiana: 0, huesos: 0, pergaminos: 0 }, 
-                    lastDungeon: 0 
+                    minerals: { diamantes: 0, rubies: 0, esmeraldas: 0, zafiros: 0, amatistas: 0, perlas: 0, oro: 0 },
+                    lastDungeon: 0,
+                    rank: 'Novato de las Cuevas'
                 };
             }
 
+            const userData = chatDb.rpg[userJid];
+            const cooldown = 15 * 60 * 1000; 
+
             const now = Date.now();
-            const timePassed = now - (dungeonDb[group][user].lastDungeon || 0);
+            const timePassed = now - (userData.lastDungeon || 0);
 
             if (timePassed < cooldown) {
                 const timeLeft = cooldown - timePassed;
@@ -72,33 +47,26 @@ const dungeonCommand = {
                 coins: Math.floor(Math.random() * (10000 - 5000 + 1)) + 5000 
             };
 
+            if (!userData.materials) userData.materials = { hierro: 0, obsidiana: 0, huesos: 0, pergaminos: 0 };
+
             for (let key in rewards) {
                 if (key !== 'coins') {
-                    dungeonDb[group][user].materials[key] = (dungeonDb[group][user].materials[key] || 0) + rewards[key];
+                    userData.materials[key] = (userData.materials[key] || 0) + rewards[key];
                 }
             }
-            dungeonDb[group][user].lastDungeon = now;
+            
+            userData.lastDungeon = now;
+            userDb.wallet = (userDb.wallet || 0) + rewards.coins;
 
-            if (!ecoDb[user]) {
-                ecoDb[user] = { wallet: 0, bank: 0, daily: { lastClaim: 0, streak: 0 }, crime: { lastUsed: 0 } };
-            }
-            ecoDb[user].wallet = (ecoDb[user].wallet || 0) + rewards.coins;
+            await checkRankUpdate(conn, m, userJid, groupJid);
 
-            if (rpgDb[group]?.[user]) {
-                await checkRankUpdate(conn, m, user, group, rpgDb);
-            }
-
-            await fs.writeJson(dungeonDbPath, dungeonDb, { spaces: 2 });
-            await fs.writeJson(rpgDbPath, rpgDb, { spaces: 2 });
-            await fs.writeJson(economyDbPath, ecoDb, { spaces: 2 });
-
+            const displayShortName = conn.user.shortName || config.botName;
             const textoExito = `*${config.visuals.emoji3}* \`MAZMORRA ${displayShortName.toUpperCase()}\` *${config.visuals.emoji3}*\n\n¡Has sobrevivido a las profundidades de la mazmorra! Botín obtenido:\n\n⛓️ *Hierro:* ${rewards.hierro}\n🏮 *Obsidiana:* ${rewards.obsidiana}\n🦴 *Huesos:* ${rewards.huesos}\n📜 *Pergaminos:* ${rewards.pergaminos}\n\n💰 *Tesoro hallado:* ¥${rewards.coins.toLocaleString()} coins \n\n> ¡El peligro aumenta, pero las recompensas también!`;
 
-            await conn.sendMessage(m.chat, { 
-                text: textoExito 
-            }, { quoted: m });
+            await conn.sendMessage(m.chat, { text: textoExito }, { quoted: m });
 
         } catch (e) {
+            console.error(e);
             m.reply(`*${config.visuals.emoji2}* Error en la mazmorra.`);
         }
     }
