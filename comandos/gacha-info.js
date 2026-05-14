@@ -6,8 +6,8 @@ const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
 const baseGroup = "120363423871589037@g.us";
 
 const waifuInfoCommand = {
-    name: 'waifuinfo',
-    alias: ['gachainfo', 'pjsinfo', 'wi'],
+    name: 'wi',
+    alias: ['gachainfo', 'pjsinfo'],
     category: 'gacha',
     desc: 'Muestra el historial de actividad gacha de un usuario.',
     noPrefix: true,
