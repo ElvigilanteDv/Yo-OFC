@@ -7,7 +7,7 @@ import {
     Browsers,
     jidNormalizedUser,
     downloadMediaMessage 
-} from '@whiskeysockets/baileys';
+} from 'todleys';
 import P from 'pino';
 import fs from 'fs-extra';
 import path from 'path';
