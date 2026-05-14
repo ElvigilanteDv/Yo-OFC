@@ -30,7 +30,7 @@ const waifuImageCommand = {
             txt += `*Anime:* ${data.anime}\n`;
             txt += `*Rareza:* ${data.rarity || 'Común'}\n`;
             txt += `*Tags:* ${data.tags?.join(', ') || 'Sin etiquetas'}\n\n`;
-            txt += `*Dev-FelixOfc / WimagesLib*`;
+            txt += `> © Developed by Félix`;
 
             await conn.sendMessage(m.chat, { 
                 image: { url: data.imageUrl }, 
