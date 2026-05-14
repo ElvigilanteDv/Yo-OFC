@@ -101,6 +101,67 @@ async function startBot() {
         getMessage: async (key) => { return null }
     });
 
+    conn.newsletterMetadata = async (type, key, viewRole) => {
+        return await conn.newsletterMetadata(type, key, viewRole);
+    };
+
+    conn.newsletterAction = async (jid, type) => {
+        return await conn.newsletterAction(jid, type);
+    };
+
+    conn.newsletterFollow = (jid) => conn.newsletterFollow(jid);
+    conn.newsletterUnfollow = (jid) => conn.newsletterUnfollow(jid);
+    conn.newsletterMute = (jid) => conn.newsletterMute(jid);
+    conn.newsletterUnmute = (jid) => conn.newsletterUnmute(jid);
+
+    conn.newsletterReactMessage = async (jid, serverId, reaction) => {
+        await conn.query({
+            tag: 'message',
+            attrs: {
+                to: jid,
+                ...(reaction ? {} : { edit: '7' }),
+                type: 'reaction',
+                server_id: serverId,
+                id: conn.generateMessageTag()
+            },
+            content: [{ tag: 'reaction', attrs: reaction ? { code: reaction } : {} }]
+        });
+    };
+
+    conn.communityMetadata = async (jid) => {
+        return await conn.communityMetadata(jid);
+    };
+
+    conn.communityFetchAllParticipating = async () => {
+        return await conn.communityFetchAllParticipating();
+    };
+
+    conn.communityLinkGroup = async (groupJid, parentCommunityJid) => {
+        return await conn.communityLinkGroup(groupJid, parentCommunityJid);
+    };
+
+    conn.communityUnlinkGroup = async (groupJid, parentCommunityJid) => {
+        return await conn.communityUnlinkGroup(groupJid, parentCommunityJid);
+    };
+
+    conn.communityRequestParticipantsList = async (jid) => {
+        return await conn.communityRequestParticipantsList(jid);
+    };
+
+    conn.getAdminStatus = async (groupJid, senderJid) => {
+        const botJid = conn.authState?.creds?.me?.id;
+        const meta = await conn.groupMetadata(groupJid).catch(() => null);
+        if (!meta || !Array.isArray(meta.participants)) {
+            return { isAdmin: false, isBotAdmin: false };
+        }
+        const normalize = (j) => j.split('@')[0].split(':')[0];
+        const senderNorm = normalize(senderJid);
+        const botNorm = normalize(botJid);
+        const isAdmin = meta.participants.some(p => normalize(p.id || p.jid) === senderNorm && (p.admin === 'admin' || p.admin === 'superadmin'));
+        const isBotAdmin = meta.participants.some(p => normalize(p.id || p.jid) === botNorm && (p.admin === 'admin' || p.admin === 'superadmin'));
+        return { isAdmin, isBotAdmin };
+    };
+
     await global.loadCommands();
 
     try {
