@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import { getDynamicConfig } from '../config/config.js';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
-import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+import { downloadContentFromMessage } from 'todleys';
 
 const sCommand = {
     name: 's',
