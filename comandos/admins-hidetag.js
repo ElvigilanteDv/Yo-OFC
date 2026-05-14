@@ -1,77 +1,44 @@
 import { config } from '../config.js';
-import { getDynamicConfig } from '../config/config.js';
-import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 
-const hidetagCommand = {
-    name: 'hidetag',
-    alias: ['tag', 'mencion', 'notificar'],
+const deleteCommand = {
+    name: 'delete',
+    alias: ['del', 'borrar', 'eliminar'],
     category: 'admins',
-    desc: 'Menciona a todos los miembros del grupo de forma invisible con un mensaje o archivo multimedia.',
+    desc: 'Elimina cualquier mensaje (texto, multimedia, sticker) al que respondas.',
     isAdmin: true,
+    isBotAdmin: true,
     isGroup: true,
     noPrefix: true,
 
-    run: async (conn, m, args, usedPrefix, commandName) => {
+    run: async (conn, m) => {
         try {
-            const groupMetadata = await conn.groupMetadata(m.chat);
-            const participants = groupMetadata.participants.map(p => p.id);
-            let text = args.join(' ');
-            let q = m.quoted ? m.quoted : null;
-
-            if (!q && !text) {
-                return m.reply(`*${config.visuals.emoji2}* Responde a un mensaje o escribe un texto.\n\n> Ejemplo: *${usedPrefix}${commandName} anuncio*`);
-            }
-
-            if (q) {
-                const mime = (q.msg || q).mimetype || '';
-                if (mime) {
-                    const content = await q.download();
-                    let options = { mentions: participants };
-
-                    if (/sticker/.test(mime)) {
-                        const dynamic = await getDynamicConfig(conn);
-                        const userName = m.pushName || 'User';
-                        const pack = dynamic.stickers.packname;
-                        const author = dynamic.stickers.packauthor.replace('@(userName)', userName);
-
-                        const sticker = new Sticker(content, {
-                            pack: pack,
-                            author: author,
-                            type: StickerTypes.FULL,
-                            categories: ['🤩'],
-                            quality: 70,
-                        });
-                        
-                        options.sticker = await sticker.toBuffer();
-                    } else if (/image/.test(mime)) {
-                        options.image = content;
-                        options.caption = text || q.text || '';
-                    } else if (/video/.test(mime)) {
-                        options.video = content;
-                        options.caption = text || q.text || '';
-                    } else if (/audio/.test(mime)) {
-                        options.audio = content;
-                        options.mimetype = 'audio/mp4';
-                        options.ptt = true;
-                    }
-
-                    await conn.sendMessage(m.chat, options);
-                } else {
-                    await conn.sendMessage(m.chat, { 
-                        text: text || q.text || '', 
-                        mentions: participants 
-                    });
+            const quoted = m.quoted ? m.quoted : m.msg?.contextInfo?.quotedMessage ? {
+                key: {
+                    remoteJid: m.chat,
+                    fromMe: m.msg.contextInfo.participant === conn.user.id,
+                    id: m.msg.contextInfo.stanzaId,
+                    participant: m.msg.contextInfo.participant
                 }
-            } else {
-                await conn.sendMessage(m.chat, { 
-                    text: text, 
-                    mentions: participants 
-                });
+            } : null;
+
+            if (!quoted) {
+                return m.reply(`*${config.visuals.emoji2}* Responde al mensaje que deseas eliminar.`);
             }
+
+            const key = {
+                remoteJid: m.chat,
+                fromMe: quoted.fromMe,
+                id: quoted.id,
+                participant: quoted.sender || quoted.key.participant
+            };
+
+            await conn.sendMessage(m.chat, { delete: key });
+
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error al procesar el tag.`);
+            console.error('Error en delete:', e);
+            m.reply(`*${config.visuals.emoji2}* No pude eliminar el mensaje. Verifica que sea administrador.`);
         }
     }
 };
 
-export default hidetagCommand;
+export default deleteCommand;
