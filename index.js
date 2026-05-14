@@ -6,7 +6,7 @@ import {
     DisconnectReason,
     Browsers,
     downloadMediaMessage
-} from '@whiskeysockets/baileys';
+} from 'todleys';
 import P from 'pino';
 import fs from 'fs';
 import path from 'path';
