@@ -21,9 +21,8 @@ const deleteMessage = {
 
             if (isGroup) {
                 const groupMetadata = await conn.groupMetadata(m.chat);
-                const participants = groupMetadata.participants;
-                const isAdmin = participants.find(p => p.id === m.sender)?.admin;
-                const isBotAdmin = participants.find(p => p.id === botNumber)?.admin;
+                const isBotAdmin = groupMetadata.participants.find(p => p.id === botNumber)?.admin;
+                const isAdmin = groupMetadata.participants.find(p => p.id === m.sender)?.admin;
 
                 if (!m.quoted.key.fromMe) {
                     if (!isBotAdmin) {
