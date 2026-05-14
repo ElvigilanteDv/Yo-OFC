@@ -22,40 +22,37 @@ const inspectCommand = {
             if (channelRegex.test(targetText)) {
                 const code = targetText.match(channelRegex)[1];
                 
-                const res = await conn.query({
-                    tag: 'iq',
-                    attrs: { 
-                        type: 'get', 
-                        xmlns: 'w:mex', 
-                        to: '@s.whatsapp.net' 
-                    },
-                    content: [{
-                        tag: 'query',
-                        attrs: { op: 'WAMXNewsletterInviteInfo' },
+                let meta;
+                try {
+                    meta = await conn.newsletterMetadata('invite', code);
+                } catch {
+                    const res = await conn.query({
+                        tag: 'iq',
+                        attrs: { type: 'get', xmlns: 'w:mex', to: '@s.whatsapp.net' },
                         content: [{
-                            tag: 'newsletter_invite',
-                            attrs: { code }
+                            tag: 'query',
+                            attrs: { op: 'WAMXNewsletterInviteInfo' },
+                            content: [{ tag: 'newsletter_invite', attrs: { code } }]
                         }]
-                    }]
-                }).catch(() => null);
+                    });
+                    const node = res.content[0].content[0];
+                    meta = {
+                        id: node.attrs.id,
+                        name: node.attrs.name,
+                        subscribers_count: node.attrs.subscribers_count,
+                        description: node.attrs.description,
+                        verification: node.attrs.verification
+                    };
+                }
 
-                if (!res) throw new Error('Error Newsletter');
-
-                const node = res.content[0].content[0];
-                const meta = {
-                    id: node.attrs.id,
-                    name: node.attrs.name,
-                    subscribers: node.attrs.subscribers_count,
-                    desc: node.attrs.description,
-                    verified: node.attrs.verification === 'verified'
-                };
+                if (!meta) throw new Error();
 
                 let txt = `*${config.visuals.emoji3} \`INSPECCIÓN DE CANAL\` ${config.visuals.emoji3}*\n\n`;
                 txt += `📝 *Nombre:* ${meta.name || 'No disponible'}\n`;
                 txt += `🆔 *ID:* ${meta.id}\n`;
-                txt += `👥 *Suscriptores:* ${parseInt(meta.subscribers).toLocaleString() || 'Oculto'}\n`;
-                txt += `🛡️ *Verificado:* ${meta.verified ? 'Sí ✅' : 'No ❌'}\n\n`;
-                txt += `📜 *Descripción:* ${meta.desc || 'Sin descripción.'}\n\n`;
+                txt += `👥 *Suscriptores:* ${parseInt(meta.subscribers_count || 0).toLocaleString()}\n`;
+                txt += `🛡️ *Verificado:* ${meta.verification === 'verified' ? 'Sí ✅' : 'No ❌'}\n\n`;
+                txt += `📜 *Descripción:* ${meta.description || 'Sin descripción.'}\n\n`;
                 txt += `> © Developed by Félix.`;
 
                 return m.reply(txt);
@@ -81,7 +78,7 @@ const inspectCommand = {
             m.reply(`*${config.visuals.emoji2}* El enlace no es un destino válido.`);
 
         } catch (e) {
-            m.reply(`*${config.visuals.emoji2}* Error al obtener datos. El enlace puede haber expirado o ser privado.`);
+            m.reply(`*${config.visuals.emoji2}* Error al obtener datos. El enlace puede haber expirado o el canal es privado.`);
         }
     }
 };
