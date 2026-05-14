@@ -13,6 +13,10 @@ const deleteMessage = {
                 return m.reply(`*${config.visuals.emoji2}* Por favor, responde al mensaje que deseas eliminar.\n\n> ¡Debes señalar un objetivo para la eliminación!`);
             }
 
+            if (m.quoted.key.fromMe) {
+                return m.reply(`*${config.visuals.emoji2}* No puedo eliminar mis propios mensajes por limitaciones del protocolo.\n\n> ¡Este mensaje es permanente en mi registro!`);
+            }
+
             const isGroup = m.chat.endsWith('@g.us');
             const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
             const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
@@ -24,22 +28,20 @@ const deleteMessage = {
                 const isBotAdmin = groupMetadata.participants.find(p => p.id === botNumber)?.admin;
                 const isAdmin = groupMetadata.participants.find(p => p.id === m.sender)?.admin;
 
-                if (!m.quoted.key.fromMe) {
-                    if (!isBotAdmin) {
-                        return m.reply(`*${config.visuals.emoji2}* El bot requiere rango de Administrador para eliminar mensajes ajenos.\n\n> ¡Sin permisos no puedo limpiar este sector!`);
-                    }
-                    if (!isAdmin && !isRealOwner) {
-                        return m.reply(`*${config.visuals.emoji2}* Solo los administradores pueden solicitar la eliminación de mensajes de otros.\n\n> ¡Acceso denegado!`);
-                    }
+                if (!isBotAdmin) {
+                    return m.reply(`*${config.visuals.emoji2}* El bot requiere rango de Administrador para eliminar mensajes ajenos.\n\n> ¡Sin permisos no puedo limpiar este sector!`);
+                }
+                if (!isAdmin && !isRealOwner) {
+                    return m.reply(`*${config.visuals.emoji2}* Solo los administradores pueden solicitar la eliminación de mensajes.\n\n> ¡Acceso denegado!`);
                 }
             } else {
-                if (!m.quoted.key.fromMe && !isRealOwner) return;
+                if (!isRealOwner) return;
             }
 
             await conn.sendMessage(m.chat, { 
                 delete: {
                     remoteJid: m.chat,
-                    fromMe: m.quoted.key.fromMe,
+                    fromMe: false,
                     id: m.quoted.id,
                     participant: m.quoted.key.participant
                 } 
