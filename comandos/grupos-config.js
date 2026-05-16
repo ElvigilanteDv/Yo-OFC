@@ -68,7 +68,7 @@ const configCommand = {
         chatConfig[feature] = isTrue;
 
         let res = `*✿︎ \`CONFIG UPDATE\` ✿︎*\n\n`;
-        res += `» La función *${feature.toUpperCase()}* ahora está: ${isTrue ? 'Activada' : 'Desactivada'}\n\n`;
+        res += `» Haz ${isTrue ? 'Activado' : 'Desactivado'} la función *${feature.toUpperCase()}*\n\n`;
         res += `> ✰ Cambio aplicado correctamente por el administrador.`;
 
         return m.reply(res);
