@@ -1,7 +1,7 @@
 export default {
     name: 'welcome',
     alias: ['antilink', 'detect', 'setup', 'config'],
-    noPrefix: false,
+    noPrefix: true,
     async run(conn, m) {
         const body = (
             m.message.conversation || 
