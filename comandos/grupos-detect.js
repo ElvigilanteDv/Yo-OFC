@@ -31,17 +31,20 @@ export const detectHandler = (conn) => {
             const chat = global.db.data.chats[id];
             if (chat && chat.detect === false) return;
 
+            const metadata = await conn.groupMetadata(id).catch(() => null);
+            const currentName = metadata?.subject || '';
+
             const now = Date.now();
             const key = `${id}-${Object.keys(move)[1]}`; 
             if (cooldown.has(key) && (now - cooldown.get(key) < 3000)) continue;
             cooldown.set(key, now);
 
-            if (move.subject) {
+            if (move.subject && move.subject !== currentName) {
                 let txt = `*📝 NOMBRE ACTUALIZADO*\n\n`;
                 txt += `> El nombre del grupo ha cambiado a:\n`;
                 txt += `> *${move.subject}*`;
                 await conn.sendMessage(id, { text: txt });
-            } else if (move.desc) {
+            } else if (move.desc && move.desc !== (metadata?.desc || '')) {
                 let txt = `*📄 DESCRIPCIÓN ACTUALIZADA*\n\n`;
                 txt += `> La nueva descripción es:\n`;
                 txt += `> ${move.desc}`;
