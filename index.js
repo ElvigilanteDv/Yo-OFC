@@ -129,7 +129,7 @@ async function startBot() {
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason === DisconnectReason.loggedOut) {
-                fs.rmSync(sessionDir, { recursive: true, force: true });
+                if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
                 process.exit();
             } else {
                 setTimeout(() => startBot(), 5000);
@@ -149,6 +149,9 @@ async function startBot() {
             conn.chats = conn.chats || {};
             conn.chats[id] = conn.chats[id] || {};
             conn.chats[id].metadata = meta;
+        }
+        if (global.groupParticipantsUpdateHandler) {
+            await global.groupParticipantsUpdateHandler(conn, update);
         }
     });
 
