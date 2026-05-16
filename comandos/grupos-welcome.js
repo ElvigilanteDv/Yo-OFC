@@ -1,45 +1,41 @@
 import { config } from '../config.js';
 
-export function welcomeHandler(conn) {
-    conn.ev.on('group-participants.update', async (update) => {
-        const { id, participants, action } = update;
+const welcomeConfig = {
+    name: 'welcome',
+    alias: ['bienvenida'],
+    category: 'group',
+    desc: 'Activa o desactiva los mensajes de bienvenida.',
+    isAdmin: true,
+    isGroup: true,
 
-        // Solo actuar si alguien entra
-        if (action !== 'add') return;
-
-        // Verificar si la bienvenida está activada para este grupo en la DB
-        if (!global.db.data.chats[id]?.welcome) return;
-
+    run: async (conn, m, { args }) => {
         try {
-            const groupMetadata = await conn.groupMetadata(id).catch(() => null);
-            if (!groupMetadata) return;
-
-            const groupName = groupMetadata.subject || 'el grupo';
-
-            for (const user of participants) {
-                let profilePicUrl;
-                try {
-                    // Intentamos obtener la foto real
-                    profilePicUrl = await conn.profilePictureUrl(user, 'image');
-                } catch (err) {
-                    // Si no tiene o es privada, usamos tu link de respaldo
-                    profilePicUrl = 'https://upload.yotsuba.giize.com/u/VPpgV7Bn.jpeg';
-                }
-
-                const userTag = `@${user.split('@')[0]}`;
-                const prefix = config.allPrefixes?.[0] || '#';
-
-                const welcomeText = `*${config.visuals.emoji3} \`WELCOME USER\` ${config.visuals.emoji3}*\n\n› ${userTag}\n\n> ¡Hola!, bienvenido al grupo *${groupName}*, esperamos que la pases de lo mejor y que disfrutes de tu estadía.\n\n» Para ver mis funciones, usa el comando \`${prefix}help\``;
-
-                // Enviamos la imagen de forma simple para evitar detección de bots
-                await conn.sendMessage(id, {
-                    image: { url: profilePicUrl },
-                    caption: welcomeText,
-                    mentions: [user]
-                });
+            const chatJid = m.chat;
+            
+            if (!global.db.data.chats[chatJid]) {
+                global.db.data.chats[chatJid] = {};
             }
+
+            const chatData = global.db.data.chats[chatJid];
+            const text = args[0]?.toLowerCase();
+
+            if (text === 'on') {
+                chatData.welcome = true;
+                return m.reply(`*${config.visuals.emoji3} BIENVENIDA ACTIVADA*\n\nA partir de ahora, saludaré a los nuevos integrantes.\n\n> Estado: ✅ ON`);
+            } 
+            
+            if (text === 'off') {
+                chatData.welcome = false;
+                return m.reply(`*${config.visuals.emoji2} BIENVENIDA DESACTIVADA*\n\nYa no enviaré mensajes cuando alguien se una.\n\n> Estado: ❌ OFF`);
+            }
+
+            m.reply(`*${config.visuals.emoji1} CONFIGURACIÓN*\n\nDebes especificar un estado:\n› \`welcome on\`\n› \`welcome off\``);
+            
         } catch (e) {
-            console.log('Error en welcomeHandler:', e);
+            console.error('Error en comando welcome:', e);
+            m.reply(`*${config.visuals.emoji2}* Hubo un fallo interno al ejecutar el comando.`);
         }
-    });
-}
+    }
+};
+
+export default welcomeConfig;
