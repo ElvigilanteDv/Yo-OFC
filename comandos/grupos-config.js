@@ -34,7 +34,7 @@ const configCommand = {
             feature = args[0]?.toLowerCase();
             action = args[1]?.toLowerCase();
         } else {
-            const prefixes = ['#', '!', '.', '/'];
+            const prefixes = ['#', '!', '.'];
             const firstWord = body.split(/ +/)[0];
             const hasPrefix = prefixes.some(p => firstWord.startsWith(p));
             feature = hasPrefix ? firstWord.slice(1) : firstWord;
@@ -56,13 +56,13 @@ const configCommand = {
         }
 
         if (!action || !['on', 'off'].includes(action)) {
-            return m.reply(`*✿︎ \`ERROR\` ✿︎*\n\n» Estado incorrecto. Usa *on* para activar o *off* para desactivar.\n\n> ✰ Ejemplo: ${feature} on`);
+            return m.reply(`*✿︎ \`ESTADO INCORRECT O\` ✿︎*\n\n» Para entender este comando, usa *off* para desactivar y *on* para activar.\n\n> ✰ Ejemplo: *#${feature} on*`);
         }
 
         const isTrue = action === 'on';
 
         if (chatConfig[feature] === isTrue) {
-            return m.reply(`*✿︎ \`AVISO\` ✿︎*\n\n» La función *${feature}* ya se encuentra ${isTrue ? 'activada' : 'desactivada'}.`);
+            return m.reply(`*✿︎* La función *${feature}* ya se encuentra ${isTrue ? '*activada*' : '*desactivada*'}.`);
         }
 
         chatConfig[feature] = isTrue;
