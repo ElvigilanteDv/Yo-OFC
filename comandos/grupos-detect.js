@@ -5,19 +5,20 @@ export const detectHandler = (conn) => {
         if (chat && chat.detect === false) return;
 
         for (const user of participants) {
-            const userNumber = user.split('@')[0];
-            let txt = '';
+            let jid = typeof user === 'string' ? user : user.id;
+            if (!jid) continue;
+            const userNumber = jid.split('@')[0].split(':')[0];
 
             if (action === 'promote') {
-                txt = `*⚡ NUEVO ADMINISTRADOR ⚡*\n\n`;
+                let txt = `*⚡ NUEVO ADMINISTRADOR ⚡*\n\n`;
                 txt += `> @${userNumber} ha sido ascendido como administrador.\n`;
                 txt += `> ¡Felicidades! 🫡`;
-                await conn.sendMessage(id, { text: txt, mentions: [user] });
+                await conn.sendMessage(id, { text: txt, mentions: [jid] });
             } else if (action === 'demote') {
-                txt = `*⚠️ ADVERTENCIA DE RANGO ⚠️*\n\n`;
+                let txt = `*⚠️ ADVERTENCIA DE RANGO ⚠️*\n\n`;
                 txt += `> @${userNumber} ha sido removido de la administración.\n`;
                 txt += `> Ya no tiene poder en el grupo.`;
-                await conn.sendMessage(id, { text: txt, mentions: [user] });
+                await conn.sendMessage(id, { text: txt, mentions: [jid] });
             }
         }
     });
@@ -42,27 +43,15 @@ export const detectHandler = (conn) => {
                 await conn.sendMessage(id, { text: txt });
             }
 
-            if (move.announce === true) {
-                let txt = `*🔒 GRUPO CERRADO*\n\n`;
-                txt += `> Ahora solo los administradores pueden enviar mensajes.`;
+            if (move.announce !== undefined) {
+                let txt = move.announce ? `*🔒 GRUPO CERRADO*\n\n` : `*🔓 GRUPO ABIERTO*\n\n`;
+                txt += move.announce ? `> Solo administradores pueden escribir.` : `> Todos pueden escribir ahora.`;
                 await conn.sendMessage(id, { text: txt });
             }
 
-            if (move.announce === false) {
-                let txt = `*🔓 GRUPO ABIERTO*\n\n`;
-                txt += `> Ahora todos los participantes pueden enviar mensajes.`;
-                await conn.sendMessage(id, { text: txt });
-            }
-
-            if (move.restrict === true) {
-                let txt = `*⚙️ EDICIÓN RESTRINGIDA*\n\n`;
-                txt += `> Ahora solo los administradores pueden editar los ajustes del grupo.`;
-                await conn.sendMessage(id, { text: txt });
-            }
-
-            if (move.restrict === false) {
-                let txt = `*⚙️ EDICIÓN LIBRE*\n\n`;
-                txt += `> Ahora todos los participantes pueden editar los ajustes del grupo.`;
+            if (move.restrict !== undefined) {
+                let txt = move.restrict ? `*⚙️ EDICIÓN RESTRINGIDA*\n\n` : `*⚙️ EDICIÓN LIBRE*\n\n`;
+                txt += move.restrict ? `> Solo admins editan ajustes.` : `> Todos pueden editar ajustes.`;
                 await conn.sendMessage(id, { text: txt });
             }
         }
