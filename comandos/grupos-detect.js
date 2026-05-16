@@ -1,81 +1,57 @@
-const cooldown = new Map();
-
 export const detectHandler = (conn) => {
-    conn.ev.on('group-participants.update', async (update) => {
-        const { id, participants, action } = update;
-        const chat = global.db.data.chats[id];
-        if (chat && chat.detect === false) return;
-
-        const metadata = await conn.groupMetadata(id).catch(() => null);
-        if (!metadata) return;
-
-        for (const user of participants) {
-            let jid = typeof user === 'string' ? user : user.id;
-            if (!jid) continue;
-            const userNumber = jid.split('@')[0].split(':')[0];
-
-            const isAdmin = metadata.participants.some(p => p.id === jid && (p.admin === 'admin' || p.admin === 'superadmin'));
-
-            if (action === 'promote' && isAdmin) {
-                const key = `${id}-promote-${jid}`;
-                if (cooldown.has(key)) continue;
-                cooldown.set(key, Date.now());
-                setTimeout(() => cooldown.delete(key), 5000);
-
-                let txt = `*⚡ NUEVO ADMINISTRADOR ⚡*\n\n`;
-                txt += `> @${userNumber} ha sido ascendido como administrador.\n`;
-                txt += `> ¡Felicidades! 🫡`;
-                await conn.sendMessage(id, { text: txt, mentions: [jid] });
-            } 
-            
-            else if (action === 'demote' && !isAdmin) {
-                const key = `${id}-demote-${jid}`;
-                if (cooldown.has(key)) continue;
-                cooldown.set(key, Date.now());
-                setTimeout(() => cooldown.delete(key), 5000);
-
-                let txt = `*⚠️ ADVERTENCIA DE RANGO ⚠️*\n\n`;
-                txt += `> @${userNumber} ha sido removido de la administración.\n`;
-                txt += `> Ya no tiene poder en el grupo.`;
-                await conn.sendMessage(id, { text: txt, mentions: [jid] });
-            }
-        }
-    });
-
-    conn.ev.on('groups.update', async (update) => {
-        for (const move of update) {
-            const id = move.id;
+    // ESTE EVENTO DETECTA PROMOTES Y DEMOTES (ADMINS)
+    conn.ev.on('group-participants.update', async (anu) => {
+        try {
+            const id = anu.id;
             const chat = global.db.data.chats[id];
             if (chat && chat.detect === false) return;
 
-            const metadata = await conn.groupMetadata(id).catch(() => null);
-            if (!metadata) continue;
+            for (const p of anu.participants) {
+                let jid = typeof p === 'string' ? p : p.id || p.jid;
+                const userNumber = jid.split('@')[0].split(':')[0];
 
-            if (move.subject && move.subject !== metadata.subject) {
-                let txt = `*📝 NOMBRE ACTUALIZADO*\n\n`;
-                txt += `> El nombre del grupo ha cambiado a:\n`;
-                txt += `> *${move.subject}*`;
-                await conn.sendMessage(id, { text: txt });
-            } 
+                if (anu.action === 'promote') {
+                    const author = anu.author || id;
+                    let txt = `*⚡ NUEVO ADMINISTRADOR ⚡*\n\n`;
+                    txt += `> @${userNumber} ha sido ascendido por @${author.split('@')[0]}.\n`;
+                    txt += `> ¡Felicidades! 🫡`;
+                    await conn.sendMessage(id, { text: txt, mentions: [jid, author] });
+                }
 
-            else if (move.desc && move.desc !== metadata.desc) {
-                let txt = `*📄 DESCRIPCIÓN ACTUALIZADA*\n\n`;
-                txt += `> La nueva descripción es:\n`;
-                txt += `> ${move.desc}`;
-                await conn.sendMessage(id, { text: txt });
-            } 
-
-            else if (move.announce !== undefined && move.announce !== metadata.announce) {
-                let txt = move.announce ? `*🔒 GRUPO CERRADO*\n\n` : `*🔓 GRUPO ABIERTO*\n\n`;
-                txt += move.announce ? `> Solo administradores pueden escribir.` : `> Todos pueden escribir ahora.`;
-                await conn.sendMessage(id, { text: txt });
-            } 
-
-            else if (move.restrict !== undefined && move.restrict !== metadata.restrict) {
-                let txt = move.restrict ? `*⚙️ EDICIÓN RESTRINGIDA*\n\n` : `*⚙️ EDICIÓN LIBRE*\n\n`;
-                txt += move.restrict ? `> Solo admins editan ajustes.` : `> Todos pueden editar ajustes.`;
-                await conn.sendMessage(id, { text: txt });
+                if (anu.action === 'demote') {
+                    const author = anu.author || id;
+                    let txt = `*⚠️ ADVERTENCIA DE RANGO ⚠️*\n\n`;
+                    txt += `> @${userNumber} ha sido removido por @${author.split('@')[0]}.\n`;
+                    txt += `> Ya no tiene poder en el grupo.`;
+                    await conn.sendMessage(id, { text: txt, mentions: [jid, author] });
+                }
             }
+        } catch (e) {}
+    });
+
+    // ESTE EVENTO DETECTA CAMBIOS DE NOMBRE, FOTO, DESC, ETC.
+    conn.ev.on('messages.upsert', async ({ messages }) => {
+        const m = messages[0];
+        if (!m.messageStubType) return;
+
+        const id = m.key.remoteJid;
+        const chat = global.db.data.chats[id];
+        if (chat && chat.detect === false) return;
+
+        const actor = m.key?.participant || m.participant || id;
+        const actorNumber = actor.split('@')[0];
+
+        const stubs = {
+            21: `*📝 NOMBRE ACTUALIZADO*\n\n> @${actorNumber} cambió el nombre a:\n> *${m.messageStubParameters[0]}*`,
+            22: `*🖼️ ICONO ACTUALIZADO*\n\n> @${actorNumber} cambió la foto del grupo.`,
+            23: `*🔗 ENLACE ACTUALIZADO*\n\n> @${actorNumber} restableció el link del grupo.`,
+            24: `*📄 DESCRIPCIÓN ACTUALIZADA*\n\n> @${actorNumber} cambió la descripción del grupo.`,
+            25: `*⚙️ AJUSTES DE EDICIÓN*\n\n> @${actorNumber} hizo que ${m.messageStubParameters[0] == 'on' ? 'solo admins' : 'todos'} editen el grupo.`,
+            26: `*🔒 ESTADO DEL CHAT*\n\n> @${actorNumber} hizo que ${m.messageStubParameters[0] == 'on' ? 'solo admins envíen mensajes.' : 'todos envíen mensajes.'}`
+        };
+
+        if (stubs[m.messageStubType]) {
+            await conn.sendMessage(id, { text: stubs[m.messageStubType], mentions: [actor] });
         }
     });
 };
