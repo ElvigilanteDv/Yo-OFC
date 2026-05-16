@@ -36,20 +36,20 @@ export const detectHandler = (conn) => {
                 await conn.sendMessage(id, { text: txt });
             }
 
-            if (move.desc) {
+            else if (move.desc) {
                 let txt = `*📄 DESCRIPCIÓN ACTUALIZADA*\n\n`;
                 txt += `> La nueva descripción es:\n`;
                 txt += `> ${move.desc}`;
                 await conn.sendMessage(id, { text: txt });
             }
 
-            if (move.announce !== undefined) {
+            else if (move.announce !== undefined) {
                 let txt = move.announce ? `*🔒 GRUPO CERRADO*\n\n` : `*🔓 GRUPO ABIERTO*\n\n`;
                 txt += move.announce ? `> Solo administradores pueden escribir.` : `> Todos pueden escribir ahora.`;
                 await conn.sendMessage(id, { text: txt });
             }
 
-            if (move.restrict !== undefined) {
+            else if (move.restrict !== undefined) {
                 let txt = move.restrict ? `*⚙️ EDICIÓN RESTRINGIDA*\n\n` : `*⚙️ EDICIÓN LIBRE*\n\n`;
                 txt += move.restrict ? `> Solo admins editan ajustes.` : `> Todos pueden editar ajustes.`;
                 await conn.sendMessage(id, { text: txt });
