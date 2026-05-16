@@ -207,7 +207,6 @@ async function startBot() {
 
     conn.ev.on('group-participants.update', async (update) => {
         const { id, participants, action } = update;
-        if (!global.db.data.chats[id]) return;
         const meta = await conn.groupMetadata(id).catch(() => null);
         if (meta) {
             conn.chats = conn.chats || {};
@@ -275,18 +274,6 @@ async function startBot() {
         const msgContent = m.message[msgType];
         const contextInfo = msgContent?.contextInfo;
 
-        if (contextInfo?.mentionedJid && Array.isArray(contextInfo.mentionedJid) && conn.signalRepository?.lidMapping) {
-            for (let i = 0; i < contextInfo.mentionedJid.length; i++) {
-                const jid = contextInfo.mentionedJid[i];
-                if (jid.endsWith('@lid')) {
-                    const pn = await conn.signalRepository.lidMapping.getPNForLID(jid).catch(() => null);
-                    if (pn) {
-                        contextInfo.mentionedJid[i] = pn;
-                    }
-                }
-            }
-        }
-
         const body = (
             m.message.conversation || 
             m.message.extendedTextMessage?.text || 
@@ -298,30 +285,31 @@ async function startBot() {
         ).trim();
 
         const prefixes = config.allPrefixes || ['#', '!', '.'];
-        const foundPrefix = prefixes.find(p => body.startsWith(p));
-        const usedPrefix = foundPrefix || '';
-
+        const usedPrefix = prefixes.find(p => body.startsWith(p)) || '';
         const commandName = body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase();
+        const args = body.slice(usedPrefix.length + commandName.length).trim().split(/ +/).filter(v => v);
+        const text = args.join(' ');
 
-        if (!isGroup && !isRealOwner) {
-            const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
-            if (!allowedPrivateCmds.includes(commandName)) return;
+        const command = global.commands.get(commandName) || Array.from(global.commands.values()).find(c => c.alias && c.alias.includes(commandName));
+
+        if (command) {
+            if (command.isGroup && !isGroup) return;
+            if (command.isAdmin && !m.isAdmin && !isRealOwner) return;
+            if (command.isOwner && !isRealOwner) return;
+            
+            try {
+                await command.run(conn, m, { args, text, usedPrefix, commandName });
+            } catch (e) {
+                console.error(e);
+            }
         }
-
-        const isNoPrefixCmd = Array.from(global.commands.values()).some(cmd => 
-            cmd.noPrefix && (
-                body.toLowerCase().startsWith(cmd.name.toLowerCase()) || 
-                (cmd.alias && cmd.alias.some(a => body.toLowerCase().startsWith(a.toLowerCase())))
-            )
-        );
-
-        if (m.key.fromMe && !foundPrefix && !isNoPrefixCmd) return;
 
         if (!global.db.data.chats[m.chat]) {
             global.db.data.chats[m.chat] = { 
                 rolls: {},
                 rpg: {},
-                gacha: {}
+                gacha: {},
+                welcome: false
             };
         }
 
