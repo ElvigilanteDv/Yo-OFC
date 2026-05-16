@@ -101,53 +101,6 @@ async function startBot() {
         getMessage: async (key) => { return null }
     });
 
-    conn.newsletterMetadata = async (type, key, viewRole) => {
-        return await conn.newsletterMetadata(type, key, viewRole);
-    };
-
-    conn.newsletterAction = async (jid, type) => {
-        return await conn.newsletterAction(jid, type);
-    };
-
-    conn.newsletterFollow = (jid) => conn.newsletterFollow(jid);
-    conn.newsletterUnfollow = (jid) => conn.newsletterUnfollow(jid);
-    conn.newsletterMute = (jid) => conn.newsletterMute(jid);
-    conn.newsletterUnmute = (jid) => conn.newsletterUnmute(jid);
-
-    conn.newsletterReactMessage = async (jid, serverId, reaction) => {
-        await conn.query({
-            tag: 'message',
-            attrs: {
-                to: jid,
-                ...(reaction ? {} : { edit: '7' }),
-                type: 'reaction',
-                server_id: serverId,
-                id: conn.generateMessageTag()
-            },
-            content: [{ tag: 'reaction', attrs: reaction ? { code: reaction } : {} }]
-        });
-    };
-
-    conn.communityMetadata = async (jid) => {
-        return await conn.communityMetadata(jid);
-    };
-
-    conn.communityFetchAllParticipating = async () => {
-        return await conn.communityFetchAllParticipating();
-    };
-
-    conn.communityLinkGroup = async (groupJid, parentCommunityJid) => {
-        return await conn.communityLinkGroup(groupJid, parentCommunityJid);
-    };
-
-    conn.communityUnlinkGroup = async (groupJid, parentCommunityJid) => {
-        return await conn.communityUnlinkGroup(groupJid, parentCommunityJid);
-    };
-
-    conn.communityRequestParticipantsList = async (jid) => {
-        return await conn.communityRequestParticipantsList(jid);
-    };
-
     conn.getAdminStatus = async (groupJid, senderJid) => {
         const botJid = conn.authState?.creds?.me?.id;
         const meta = await conn.groupMetadata(groupJid).catch(() => null);
@@ -169,29 +122,13 @@ async function startBot() {
         if (welcomeModule.welcomeHandler) welcomeModule.welcomeHandler(conn);
     } catch (e) {}
 
-    if (!conn.authState.creds.registered) {
-        setTimeout(async () => {
-            let input = await question(chalk.cyan('\n  [?] Introduce tu número con código de país:\n  > '));
-            let phoneNumber = input.replace(/[^0-9]/g, '');
-            try {
-                let code = await conn.requestPairingCode(phoneNumber);
-                code = code?.match(/.{1,4}/g)?.join('-') || code;
-                console.log(chalk.black.bgCyan(`\n  CODIGO DE VINCULACIÓN: ${code}  \n`));
-            } catch (error) {
-                console.error('Error al generar código:', error);
-            }
-        }, 3000);
-    }
-
     conn.ev.on('creds.update', saveCreds);
 
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
-
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason === DisconnectReason.loggedOut) {
-                console.log(chalk.red('[!] Sesión cerrada. Elimina la carpeta sesion_bot.'));
                 process.exit();
             } else {
                 setTimeout(() => startBot(), 5000);
@@ -199,35 +136,18 @@ async function startBot() {
         } else if (connection === 'open') {
             process.stdout.write('\x1Bc');
             CFonts.say('KAZUMA', { font: 'block', align: 'center', colors: ['cyan', 'magenta'] });
-            console.log(chalk.greenBright.bold(`\n  [✨] ¡KAZUMA CONECTADO!\n  [⌚] Tiempo de carga: ${((Date.now() - startTime) / 1000).toFixed(2)}s`));
             await loadAllSubBots(conn);
             await loadAllMoodBots(conn);
         }
     });
 
     conn.ev.on('group-participants.update', async (update) => {
-        const { id, participants, action } = update;
+        const { id } = update;
         const meta = await conn.groupMetadata(id).catch(() => null);
         if (meta) {
             conn.chats = conn.chats || {};
             conn.chats[id] = conn.chats[id] || {};
             conn.chats[id].metadata = meta;
-        }
-        if (typeof global.groupParticipantsUpdateHandler === 'function') {
-            await global.groupParticipantsUpdateHandler(conn, update);
-        }
-    });
-
-    conn.ev.on('groups.update', async (updates) => {
-        for (const update of updates) {
-            const { id } = update;
-            if (!id) continue;
-            const meta = await conn.groupMetadata(id).catch(() => null);
-            if (meta) {
-                conn.chats = conn.chats || {};
-                conn.chats[id] = conn.chats[id] || {};
-                conn.chats[id].metadata = meta;
-            }
         }
     });
 
@@ -235,9 +155,6 @@ async function startBot() {
         const m = chatUpdate.messages[0];
         if (!m || !m.message) return;
         if (m.key.remoteJid === 'status@broadcast') return;
-
-        const messageTimestamp = (m.messageTimestamp?.low || m.messageTimestamp || Date.now()) * 1000;
-        if ((Date.now() - messageTimestamp) > 180000) return;
 
         m.chat = m.key.remoteJid;
         m.sender = conn.decodeJid ? conn.decodeJid(m.key.participant || m.key.remoteJid) : (m.key.participant || m.key.remoteJid);
@@ -251,39 +168,18 @@ async function startBot() {
                 meta = await conn.groupMetadata(m.chat).catch(() => null);
                 if (meta) conn.chats[m.chat].metadata = meta;
             }
-            if (meta && Array.isArray(meta.participants)) {
-                const participant = meta.participants.find(p => p.id === m.sender || (p.jid && p.jid === m.sender));
+            if (meta) {
+                const participant = meta.participants.find(p => p.id === m.sender);
                 m.isAdmin = participant?.admin === 'admin' || participant?.admin === 'superadmin' || false;
-                const myJid = conn.authState?.creds?.me?.id.split(':')[0] + '@s.whatsapp.net';
-                const botParticipant = meta.participants.find(p => p.id === myJid || (p.jid && p.jid === myJid));
-                m.isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin' || false;
-            } else {
-                m.isAdmin = false;
-                m.isBotAdmin = false;
             }
-        } else {
-            m.isAdmin = false;
-            m.isBotAdmin = false;
         }
 
+        m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
+
         const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
-        const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-        const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+        const isRealOwner = m.sender.split('@')[0].replace(/\D/g, '') === realOwnerNumber || m.key.fromMe;
 
-        const msgType = Object.keys(m.message)[0];
-        const msgContent = m.message[msgType];
-        const contextInfo = msgContent?.contextInfo;
-
-        const body = (
-            m.message.conversation || 
-            m.message.extendedTextMessage?.text || 
-            m.message.imageMessage?.caption || 
-            m.message.videoMessage?.caption || 
-            m.message.buttonsResponseMessage?.selectedButtonId || 
-            m.message.listResponseMessage?.singleSelectReply?.selectedRowId || 
-            m.message.templateButtonReplyMessage?.selectedId || ""
-        ).trim();
-
+        const body = (m.message.conversation || m.message.extendedTextMessage?.text || m.message.imageMessage?.caption || m.message.videoMessage?.caption || "").trim();
         const prefixes = config.allPrefixes || ['#', '!', '.'];
         const usedPrefix = prefixes.find(p => body.startsWith(p)) || '';
         const commandName = body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase();
@@ -295,69 +191,13 @@ async function startBot() {
         if (command) {
             if (command.isGroup && !isGroup) return;
             if (command.isAdmin && !m.isAdmin && !isRealOwner) return;
-            if (command.isOwner && !isRealOwner) return;
-            
             try {
                 await command.run(conn, m, { args, text, usedPrefix, commandName });
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        if (!global.db.data.chats[m.chat]) {
-            global.db.data.chats[m.chat] = { 
-                rolls: {},
-                rpg: {},
-                gacha: {},
-                welcome: false
-            };
-        }
-
-        if (!global.db.data.users[m.sender]) {
-            global.db.data.users[m.sender] = {
-                wallet: 0,
-                bank: 0,
-                daily: { lastClaim: 0, streak: 0 },
-                inventory: {},
-                marry: null,
-                genre: 'No definido',
-                birthday: { date: 'No definido', age: 'No definida' }
-            };
-        }
-
-        global.lastMessageMap.set(m.sender, Date.now());
-
-        m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
-
-        m.download = async () => {
-            return await downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
-        };
-
-        if (contextInfo?.quotedMessage) {
-            const type = Object.keys(contextInfo.quotedMessage)[0];
-            const q = contextInfo.quotedMessage[type];
-            m.quoted = {
-                type, 
-                msg: q, 
-                id: contextInfo.stanzaId,
-                mimetype: q?.mimetype || '',
-                text: q?.text || q?.caption || contextInfo.quotedMessage.conversation || '',
-                key: {
-                    remoteJid: m.chat,
-                    fromMe: contextInfo.participant === (conn.user.id.split(':')[0] + '@s.whatsapp.net'),
-                    id: contextInfo.stanzaId,
-                    participant: contextInfo.participant
-                },
-                message: contextInfo.quotedMessage,
-                download: async () => {
-                    const quotedMsg = { message: contextInfo.quotedMessage };
-                    return await downloadMediaMessage(quotedMsg, 'buffer', {}, { logger: P({ level: 'silent' }) });
-                }
-            };
-        } else {
-            m.quoted = null;
-        }
-
+        if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = { welcome: false };
+        
         logger(m, conn);
         await antiLinkHandler(conn, m);
         await pixelHandler(conn, m, config);
