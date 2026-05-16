@@ -101,19 +101,19 @@ async function startBot() {
         getMessage: async (key) => { return null }
     });
 
-    conn.getAdminStatus = async (groupJid, senderJid) => {
-        const botJid = conn.authState?.creds?.me?.id;
-        const meta = await conn.groupMetadata(groupJid).catch(() => null);
-        if (!meta || !Array.isArray(meta.participants)) {
-            return { isAdmin: false, isBotAdmin: false };
-        }
-        const normalize = (j) => j.split('@')[0].split(':')[0];
-        const senderNorm = normalize(senderJid);
-        const botNorm = normalize(botJid);
-        const isAdmin = meta.participants.some(p => normalize(p.id || p.jid) === senderNorm && (p.admin === 'admin' || p.admin === 'superadmin'));
-        const isBotAdmin = meta.participants.some(p => normalize(p.id || p.jid) === botNorm && (p.admin === 'admin' || p.admin === 'superadmin'));
-        return { isAdmin, isBotAdmin };
-    };
+    if (!conn.authState.creds.registered) {
+        setTimeout(async () => {
+            let input = await question(chalk.cyan('\n  [?] Introduce tu número con código de país:\n  > '));
+            let phoneNumber = input.replace(/[^0-9]/g, '');
+            try {
+                let code = await conn.requestPairingCode(phoneNumber);
+                code = code?.match(/.{1,4}/g)?.join('-') || code;
+                console.log(chalk.black.bgCyan(`\n  CODIGO DE VINCULACIÓN: ${code}  \n`));
+            } catch (error) {
+                console.error(error);
+            }
+        }, 3000);
+    }
 
     await global.loadCommands();
 
@@ -129,6 +129,7 @@ async function startBot() {
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason === DisconnectReason.loggedOut) {
+                fs.rmSync(sessionDir, { recursive: true, force: true });
                 process.exit();
             } else {
                 setTimeout(() => startBot(), 5000);
@@ -160,6 +161,8 @@ async function startBot() {
         m.sender = conn.decodeJid ? conn.decodeJid(m.key.participant || m.key.remoteJid) : (m.key.participant || m.key.remoteJid);
         const isGroup = m.chat.endsWith('@g.us');
 
+        m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
+
         if (isGroup) {
             conn.chats = conn.chats || {};
             conn.chats[m.chat] = conn.chats[m.chat] || {};
@@ -173,8 +176,6 @@ async function startBot() {
                 m.isAdmin = participant?.admin === 'admin' || participant?.admin === 'superadmin' || false;
             }
         }
-
-        m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
 
         const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
         const isRealOwner = m.sender.split('@')[0].replace(/\D/g, '') === realOwnerNumber || m.key.fromMe;
