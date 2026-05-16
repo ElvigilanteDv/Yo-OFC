@@ -1,69 +1,70 @@
-import fs from 'fs';
-import path from 'path';
-
-const databasePath = path.resolve('./jsons/grupos.json');
-
-export const detectHandler = async (conn) => {
+export const detectHandler = (conn) => {
     conn.ev.on('group-participants.update', async (update) => {
-        try {
-            const { id, participants, action, author } = update;
+        const { id, participants, action } = update;
+        const chat = global.db.data.chats[id];
+        if (chat && chat.detect === false) return;
 
-            if (!fs.existsSync(databasePath)) return;
-            const db = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
-            if (!db[id]?.detect) return;
+        for (const user of participants) {
+            const userNumber = user.split('@')[0];
+            let txt = '';
 
-            for (let user of participants) {
-                const phone = typeof user === 'string' ? user.split('@')[0] : 'usuario';
-                const actor = author ? author.split('@')[0] : 'un Administrador';
-                let aviso = '';
-
-                if (action === 'promote') {
-                    aviso = `*✿︎* \`Nuevo Administrador\` *✿︎*\n\nEl usuario *@${phone}* ha sido promovido a Administrador por *@${actor}*.\n\n> ¡Felicidades por el nuevo cargo!`;
-                } else if (action === 'demote') {
-                    aviso = `*❁* \`Remoción de Cargo\` *❁*\n\nEl usuario *@${phone}* fue degradado de su cargo por *@${actor}*.\n\n> ¡Seguimos trabajando!`;
-                }
-
-                if (aviso) {
-                    await conn.sendMessage(id, { 
-                        text: aviso, 
-                        mentions: [user, author].filter(Boolean) 
-                    });
-                }
+            if (action === 'promote') {
+                txt = `*⚡ NUEVO ADMINISTRADOR ⚡*\n\n`;
+                txt += `> @${userNumber} ha sido ascendido como administrador.\n`;
+                txt += `> ¡Felicidades! 🫡`;
+                await conn.sendMessage(id, { text: txt, mentions: [user] });
+            } else if (action === 'demote') {
+                txt = `*⚠️ ADVERTENCIA DE RANGO ⚠️*\n\n`;
+                txt += `> @${userNumber} ha sido removido de la administración.\n`;
+                txt += `> Ya no tiene poder en el grupo.`;
+                await conn.sendMessage(id, { text: txt, mentions: [user] });
             }
-        } catch (e) {
-            console.error("Error en Detect Participantes:", e);
         }
     });
 
-    conn.ev.on('messages.upsert', async ({ messages }) => {
-        try {
-            const m = messages[0];
-            if (!m.messageStubType) return;
-            const chat = m.key.remoteJid;
+    conn.ev.on('groups.update', async (update) => {
+        for (const move of update) {
+            const id = move.id;
+            const chat = global.db.data.chats[id];
+            if (chat && chat.detect === false) return;
 
-            if (!fs.existsSync(databasePath)) return;
-            const db = JSON.parse(fs.readFileSync(databasePath, 'utf-8'));
-            if (!db[chat]?.detect) return;
-
-            const actor = m.key?.participant || m.participant || chat;
-            const phone = typeof actor === 'string' ? actor.split('@')[0] : 'usuario';
-            let cambio = '';
-
-            if (m.messageStubType == 21) cambio = `cambió el nombre a: *${m.messageStubParameters[0]}*`;
-            if (m.messageStubType == 22) cambio = `actualizó la foto del grupo.`;
-            if (m.messageStubType == 24) cambio = `editó la descripción del grupo.`;
-            if (m.messageStubType == 25) cambio = `cambió los permisos de edición a: *${m.messageStubParameters[0] == 'on' ? 'Solo Admins' : 'Todos'}*`;
-
-            if (cambio) {
-                await conn.sendMessage(chat, { 
-                    text: `*✿︎* \`Aviso de Grupo\` *✿︎*\n\n*@${phone}* ${cambio}\n\n> Kazuma detectó el cambio.`,
-                    mentions: [actor]
-                });
+            if (move.subject) {
+                let txt = `*📝 NOMBRE ACTUALIZADO*\n\n`;
+                txt += `> El nombre del grupo ha cambiado a:\n`;
+                txt += `> *${move.subject}*`;
+                await conn.sendMessage(id, { text: txt });
             }
-        } catch (e) {
-            console.error("Error en Detect Stub:", e);
+
+            if (move.desc) {
+                let txt = `*📄 DESCRIPCIÓN ACTUALIZADA*\n\n`;
+                txt += `> La nueva descripción es:\n`;
+                txt += `> ${move.desc}`;
+                await conn.sendMessage(id, { text: txt });
+            }
+
+            if (move.announce === true) {
+                let txt = `*🔒 GRUPO CERRADO*\n\n`;
+                txt += `> Ahora solo los administradores pueden enviar mensajes.`;
+                await conn.sendMessage(id, { text: txt });
+            }
+
+            if (move.announce === false) {
+                let txt = `*🔓 GRUPO ABIERTO*\n\n`;
+                txt += `> Ahora todos los participantes pueden enviar mensajes.`;
+                await conn.sendMessage(id, { text: txt });
+            }
+
+            if (move.restrict === true) {
+                let txt = `*⚙️ EDICIÓN RESTRINGIDA*\n\n`;
+                txt += `> Ahora solo los administradores pueden editar los ajustes del grupo.`;
+                await conn.sendMessage(id, { text: txt });
+            }
+
+            if (move.restrict === false) {
+                let txt = `*⚙️ EDICIÓN LIBRE*\n\n`;
+                txt += `> Ahora todos los participantes pueden editar los ajustes del grupo.`;
+                await conn.sendMessage(id, { text: txt });
+            }
         }
     });
 };
-
-export default detectHandler;
