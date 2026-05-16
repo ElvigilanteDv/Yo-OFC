@@ -14,10 +14,10 @@ export default {
         const hasPrefix = prefixes.some(p => body.startsWith(p));
         const prefix = hasPrefix ? prefixes.find(p => body.startsWith(p)) : '';
 
-        const fullCommand = hasPrefix ? body.slice(prefix.length).trim() : body;
-        const splitCommand = fullCommand.split(/ +/);
-        const commandUsed = splitCommand[0].toLowerCase();
-        const args = splitCommand.slice(1);
+        const fullText = hasPrefix ? body.slice(prefix.length).trim() : body;
+        const parts = fullText.split(/ +/);
+        const commandUsed = parts[0].toLowerCase();
+        const args = parts.slice(1);
 
         if (!m.chat.endsWith('@g.us')) {
             return m.reply('Este comando solo se puede usar en grupos.');
@@ -54,8 +54,7 @@ export default {
                 txt += `» 👋 *Welcome:* ${statusWelcome}\n`;
                 txt += `» 🔗 *Antilink:* ${statusAntilink}\n`;
                 txt += `» 👁️ *Detect:* ${statusDetect}\n\n`;
-                txt += `> ✰ Usa ${hasPrefix ? prefix : ''}función on/off para cambiar los ajustes.\n`;
-                txt += `> ✰ Ejemplo: ${hasPrefix ? prefix : ''}antilink off`;
+                txt += `> ✰ Usa ${hasPrefix ? prefix : ''}función on/off para cambiar los ajustes.`;
                 return m.reply(txt);
             }
             feature = args[0].toLowerCase();
@@ -69,7 +68,7 @@ export default {
             return m.reply('Esa opción no es válida. Elige entre: welcome, antilink o detect.');
         }
 
-        if (!['on', 'off'].includes(action)) {
+        if (!action || !['on', 'off'].includes(action)) {
             return m.reply('Estado incorrecto. Usa "on" para activar o "off" para desactivar.');
         }
 
