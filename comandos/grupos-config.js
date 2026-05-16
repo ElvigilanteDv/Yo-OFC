@@ -1,6 +1,6 @@
 export default {
     name: 'welcome',
-    alias: ['antilink', 'detect'],
+    alias: ['antilink', 'detect', 'setup', 'config'],
     noPrefix: true,
     async run(conn, m) {
         const body = (
@@ -11,10 +11,13 @@ export default {
         ).trim();
 
         const prefixes = ['#', '!', '.'];
-        const prefix = prefixes.find(p => body.startsWith(p)) || '#';
-        
-        const commandUsed = body.slice(prefix.length).trim().split(/ +/)[0].toLowerCase();
-        const args = body.split(/ +/).slice(1);
+        const hasPrefix = prefixes.some(p => body.startsWith(p));
+        const prefix = hasPrefix ? prefixes.find(p => body.startsWith(p)) : '';
+
+        const fullCommand = hasPrefix ? body.slice(prefix.length).trim() : body;
+        const splitCommand = fullCommand.split(/ +/);
+        const commandUsed = splitCommand[0].toLowerCase();
+        const args = splitCommand.slice(1);
 
         if (!m.chat.endsWith('@g.us')) {
             return m.reply('Este comando solo se puede usar en grupos.');
@@ -51,8 +54,8 @@ export default {
                 txt += `» 👋 *Welcome:* ${statusWelcome}\n`;
                 txt += `» 🔗 *Antilink:* ${statusAntilink}\n`;
                 txt += `» 👁️ *Detect:* ${statusDetect}\n\n`;
-                txt += `> ✰ Usa ${prefix}función on/off para cambiar los ajustes.\n`;
-                txt += `> ✰ Ejemplo: ${prefix}antilink off`;
+                txt += `> ✰ Usa ${hasPrefix ? prefix : ''}función on/off para cambiar los ajustes.\n`;
+                txt += `> ✰ Ejemplo: ${hasPrefix ? prefix : ''}antilink off`;
                 return m.reply(txt);
             }
             feature = args[0].toLowerCase();
@@ -77,11 +80,11 @@ export default {
         }
 
         chatConfig[feature] = isTrue;
-        
+
         let res = `*✿︎ \`CONFIG UPDATE\` ✿︎*\n\n`;
         res += `» La función *${feature.toUpperCase()}* ahora está: ${isTrue ? 'Activada' : 'Desactivada'}\n\n`;
         res += `> ✰ Cambio aplicado correctamente por el administrador.`;
-        
+
         return m.reply(res);
     }
 };
