@@ -56,7 +56,7 @@ const configCommand = {
         }
 
         if (!action || !['on', 'off'].includes(action)) {
-            return m.reply(`*✿︎ \`ESTADO INCORRECT O\` ✿︎*\n\n» Para entender este comando, usa *off* para desactivar y *on* para activar.\n\n> ✰ Ejemplo: *#${feature} on*`);
+            return m.reply(`*✿︎ \`ESTADO INCORRECTO\` ✿︎*\n\n» Para entender este comando, usa *off* para desactivar y *on* para activar.\n\n> ✰ Ejemplo: *#${feature} on*`);
         }
 
         const isTrue = action === 'on';
