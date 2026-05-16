@@ -205,6 +205,33 @@ async function startBot() {
         }
     });
 
+    conn.ev.on('group-participants.update', async (update) => {
+        const { id, participants, action } = update;
+        if (!global.db.data.chats[id]) return;
+        const meta = await conn.groupMetadata(id).catch(() => null);
+        if (meta) {
+            conn.chats = conn.chats || {};
+            conn.chats[id] = conn.chats[id] || {};
+            conn.chats[id].metadata = meta;
+        }
+        if (typeof global.groupParticipantsUpdateHandler === 'function') {
+            await global.groupParticipantsUpdateHandler(conn, update);
+        }
+    });
+
+    conn.ev.on('groups.update', async (updates) => {
+        for (const update of updates) {
+            const { id } = update;
+            if (!id) continue;
+            const meta = await conn.groupMetadata(id).catch(() => null);
+            if (meta) {
+                conn.chats = conn.chats || {};
+                conn.chats[id] = conn.chats[id] || {};
+                conn.chats[id].metadata = meta;
+            }
+        }
+    });
+
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         const m = chatUpdate.messages[0];
         if (!m || !m.message) return;
@@ -217,9 +244,48 @@ async function startBot() {
         m.sender = conn.decodeJid ? conn.decodeJid(m.key.participant || m.key.remoteJid) : (m.key.participant || m.key.remoteJid);
         const isGroup = m.chat.endsWith('@g.us');
 
+        if (isGroup) {
+            conn.chats = conn.chats || {};
+            conn.chats[m.chat] = conn.chats[m.chat] || {};
+            let meta = conn.chats[m.chat].metadata;
+            if (!meta) {
+                meta = await conn.groupMetadata(m.chat).catch(() => null);
+                if (meta) conn.chats[m.chat].metadata = meta;
+            }
+            if (meta && Array.isArray(meta.participants)) {
+                const participant = meta.participants.find(p => p.id === m.sender || (p.jid && p.jid === m.sender));
+                m.isAdmin = participant?.admin === 'admin' || participant?.admin === 'superadmin' || false;
+                const myJid = conn.authState?.creds?.me?.id.split(':')[0] + '@s.whatsapp.net';
+                const botParticipant = meta.participants.find(p => p.id === myJid || (p.jid && p.jid === myJid));
+                m.isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin' || false;
+            } else {
+                m.isAdmin = false;
+                m.isBotAdmin = false;
+            }
+        } else {
+            m.isAdmin = false;
+            m.isBotAdmin = false;
+        }
+
         const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
         const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
         const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
+
+        const msgType = Object.keys(m.message)[0];
+        const msgContent = m.message[msgType];
+        const contextInfo = msgContent?.contextInfo;
+
+        if (contextInfo?.mentionedJid && Array.isArray(contextInfo.mentionedJid) && conn.signalRepository?.lidMapping) {
+            for (let i = 0; i < contextInfo.mentionedJid.length; i++) {
+                const jid = contextInfo.mentionedJid[i];
+                if (jid.endsWith('@lid')) {
+                    const pn = await conn.signalRepository.lidMapping.getPNForLID(jid).catch(() => null);
+                    if (pn) {
+                        contextInfo.mentionedJid[i] = pn;
+                    }
+                }
+            }
+        }
 
         const body = (
             m.message.conversation || 
@@ -278,10 +344,6 @@ async function startBot() {
         m.download = async () => {
             return await downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
         };
-
-        const msgType = Object.keys(m.message)[0];
-        const msgContent = m.message[msgType];
-        const contextInfo = msgContent?.contextInfo;
 
         if (contextInfo?.quotedMessage) {
             const type = Object.keys(contextInfo.quotedMessage)[0];
