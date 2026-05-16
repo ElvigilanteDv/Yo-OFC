@@ -12,6 +12,26 @@
 
 ---
 
+## 🌩️ Kazuma REST API
+Potencia tus proyectos con la infraestructura de **Kazuma API**, una solución robusta y rápida para desarrolladores.
+
+| Servicio | Acceso Directo |
+| :--- | :--- |
+| **API Endpoints** | [**🟢 TOCA AQUÍ**](https://rest.kazuma.giize.com) |
+| **Dashboard** | [**🟢 TOCA AQUÍ**](https://rest.kazuma.giize.com/dash) |
+
+---
+
+### 🚀 ¿Por qué usar nuestra API?
+* **Velocidad Extrema:** Optimizada para respuestas en milisegundos.
+* **Estabilidad 24/7:** Monitoreo constante para asegurar que tu bot nunca se detenga.
+* **Fácil Integración:** Documentación clara y sencilla para implementar en cualquier lenguaje.
+
+> [!TIP]
+> Visita el **Dashboard** para gestionar tus credenciales y monitorear tu consumo en tiempo real.
+
+---
+
 ## 🛠️ INSTALACIÓN Y ACTUALIZACIÓN
 
 ### ☁️ Pterodactyl Panel
