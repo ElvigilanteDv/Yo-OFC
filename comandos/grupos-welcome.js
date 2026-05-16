@@ -1,3 +1,5 @@
+import { config } from '../config.js';
+
 export default function welcomeHandler(conn) {
     conn.ev.on('group-participants.update', async (update) => {
         const { id, participants, action } = update;
@@ -7,6 +9,8 @@ export default function welcomeHandler(conn) {
 
         const metadata = await conn.groupMetadata(id).catch(() => null);
         if (!metadata) return;
+
+        const prefix = config.allPrefixes ? config.allPrefixes[0] : '#';
 
         for (const user of participants) {
             let jid = typeof user === 'string' ? user : user.id;
@@ -20,19 +24,30 @@ export default function welcomeHandler(conn) {
             }
 
             if (action === 'add') {
-                const welcomeCaption = `┏━━━━━━━━━━━━━━━━━━┓\n┃ ✨ ¡BIENVENIDO(A)! ✨\n┗━━━━━━━━━━━━━━━━━━┛\n\n👋 Hola @${userNumber}\n\n🎊 Bienvenido a *${metadata.subject}*\n\n> 📜 Lee las reglas para evitar problemas.\n> 🛡️ Diviértete con nuestra comunidad.`;
+                let txt = `┏━━✿︎ *WELCOME USER* ✿︎━━╮\n\n`;
+                txt += `❀ ¡Hola! @${userNumber} un gusto verte por aquí, `;
+                txt += `estamos felices de que te hayas unido al grupo `;
+                txt += `*${metadata.subject}* y nos encantaría conocerte!\n\n`;
+                txt += `✰ para ver mi lista de comandos usa el comando \`${prefix}help\`\n`;
+                txt += `> kazuma.giize.com\n`;
+                txt += `╰━━━━━━━━━━━━━━━╯`;
                 
                 await conn.sendMessage(id, { 
                     image: { url: pp }, 
-                    caption: welcomeCaption, 
+                    caption: txt, 
                     mentions: [jid] 
                 });
             } else if (action === 'remove') {
-                const goodbyeCaption = `┏━━━━━━━━━━━━━━━━━━┓\n┃ 👋 ¡ADIÓS VAQUERO! 👋\n┗━━━━━━━━━━━━━━━━━━┛\n\nSe nos fue @${userNumber}\n\n> 💨 Una persona menos en *${metadata.subject}*.\n> ✨ ¡Esperamos que vuelvas pronto!`;
+                let txt = `┏━━✿︎ *BYE USER* ✿︎━━╮\n\n`;
+                txt += `❀ ¡Adiós! @${userNumber} lamentamos que hayas dejado el grupo `;
+                txt += `*${metadata.subject}*, ¡fue un gusto tenerte con nosotros!\n\n`;
+                txt += `✰ esperamos que vuelvas pronto por aquí\n`;
+                txt += `> kazuma.giize.com\n`;
+                txt += `╰━━━━━━━━━━━━━━━╯`;
                 
                 await conn.sendMessage(id, { 
                     image: { url: pp }, 
-                    caption: goodbyeCaption, 
+                    caption: txt, 
                     mentions: [jid] 
                 });
             }
