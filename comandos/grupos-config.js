@@ -1,6 +1,6 @@
 export default {
     name: 'welcome',
-    alias: ['antilink', 'detect', 'setup', 'config'],
+    alias: ['antilink', 'detect'],
     noPrefix: true,
     async run(conn, m) {
         const body = (
