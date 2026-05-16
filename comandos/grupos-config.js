@@ -2,7 +2,7 @@ export default {
     name: 'config',
     alias: ['grupos', 'setup'],
     noPrefix: false,
-    async execute(conn, m) {
+    async run(conn, m) {
         const body = (
             m.message.conversation || 
             m.message.extendedTextMessage?.text || 
@@ -23,6 +23,9 @@ export default {
 
         if (!global.db.data.chats[m.chat]) {
             global.db.data.chats[m.chat] = { 
+                welcome: true,
+                antilink: true,
+                detect: true,
                 rolls: {},
                 rpg: {},
                 gacha: {}
@@ -31,16 +34,12 @@ export default {
 
         const chatConfig = global.db.data.chats[m.chat];
 
-        if (chatConfig.welcome === undefined) chatConfig.welcome = true;
-        if (chatConfig.antilink === undefined) chatConfig.antilink = true;
-        if (chatConfig.detect === undefined) chatConfig.detect = true;
-
         if (args.length < 2) {
             const statusWelcome = chatConfig.welcome ? 'Activado ✅' : 'Desactivado ❌';
             const statusAntilink = chatConfig.antilink ? 'Activado ✅' : 'Desactivado ❌';
             const statusDetect = chatConfig.detect ? 'Activado ✅' : 'Desactivado ❌';
             
-            const txtMenu = `⚙️ *CONFIGURACIÓN DEL GRUPO* ⚙️\n\n📌 *Opciones disponibles:*\n• welcome [on/off]\n• antilink [on/off]\n• detect [on/off]\n\n📊 *Estado actual:*\n👋 Welcome: ${statusWelcome}\n🔗 Antilink: ${statusAntilink}\n👁️ Detect: ${statusDetect}\n\n📝 _Ejemplo de uso: .config antilink off_`;
+            const txtMenu = `⚙️ *CONFIGURACIÓN DEL GRUPO* ⚙️\n\n📌 *Opciones disponibles:*\n• welcome [on/off]\n• antilink [on/off]\n• detect [on/off]\n\n📊 *Estado actual:*\n👋 Welcome: ${statusWelcome}\n🔗 Antilink: ${statusAntilink}\n👁️ Detect: ${statusDetect}\n\n📝 _Ejemplo de uso: #setup antilink off_`;
             return m.reply(txtMenu);
         }
 
@@ -58,7 +57,7 @@ export default {
         const isTrue = action === 'on';
 
         if (chatConfig[feature] === isTrue) {
-            return m.reply(`La función *${feature}* ya se encuentra ${action === 'on' ? 'activada ✅' : 'desactivada ❌'}.`);
+            return m.reply(`La función *${feature}* ya se encuentra ${isTrue ? 'activada ✅' : 'desactivada ❌'}.`);
         }
 
         chatConfig[feature] = isTrue;
