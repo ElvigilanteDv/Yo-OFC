@@ -19,9 +19,9 @@ import { config } from './config.js';
 import { logger } from './config/print.js';
 import { pixelHandler } from './pixel.js';
 
-import { detectHandler } from './comandos/grupos-detect.js';
+import * as detectModule from './comandos/grupos-detect.js';
 import antiLinkHandler from './comandos/grupos-antilink.js';
-import welcomeHandler from './comandos/grupos-welcome.js';
+import * as welcomeModule from './comandos/grupos-welcome.js';
 import { loadAllSubBots } from './sockets/index.js';
 import { loadAllMoodBots } from './sockets/SubMoods/index.js';
 
@@ -165,8 +165,8 @@ async function startBot() {
     await global.loadCommands();
 
     try {
-        detectHandler(conn);
-        welcomeHandler(conn);
+        if (detectModule.detectHandler) detectModule.detectHandler(conn);
+        if (welcomeModule.welcomeHandler) welcomeModule.welcomeHandler(conn);
     } catch (e) {}
 
     if (!conn.authState.creds.registered) {
