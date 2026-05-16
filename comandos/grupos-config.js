@@ -1,24 +1,9 @@
-export default {
+const configCommand = {
     name: 'welcome',
     alias: ['antilink', 'detect', 'setup', 'config'],
     noPrefix: true,
-    async run(conn, m) {
-        const body = (
-            m.message.conversation || 
-            m.message.extendedTextMessage?.text || 
-            m.message.imageMessage?.caption || 
-            m.message.videoMessage?.caption || ""
-        ).trim();
 
-        const prefixes = ['#', '!', '.'];
-        const hasPrefix = prefixes.some(p => body.startsWith(p));
-        const prefix = hasPrefix ? prefixes.find(p => body.startsWith(p)) : '';
-
-        const fullText = hasPrefix ? body.slice(prefix.length).trim() : body;
-        const parts = fullText.split(/ +/);
-        const commandUsed = parts[0].toLowerCase();
-        const args = parts.slice(1);
-
+    run: async (conn, m, args) => {
         if (!m.chat.endsWith('@g.us')) {
             return m.reply('Este comando solo se puede usar en grupos.');
         }
@@ -40,36 +25,38 @@ export default {
         }
 
         const chatConfig = global.db.data.chats[m.chat];
-
+        const body = (m.message.conversation || m.message.extendedTextMessage?.text || "").toLowerCase();
+        
         let feature;
         let action;
 
-        if (commandUsed === 'setup' || commandUsed === 'config') {
-            if (args.length < 2) {
-                const statusWelcome = chatConfig.welcome ? 'Activado' : 'Desactivado';
-                const statusAntilink = chatConfig.antilink ? 'Activado' : 'Desactivado';
-                const statusDetect = chatConfig.detect ? 'Activado' : 'Desactivado';
-
-                let txt = `*✿︎ \`CONFIGURACIÓN DEL GRUPO\` ✿︎*\n\n`;
-                txt += `» 👋 *Welcome:* ${statusWelcome}\n`;
-                txt += `» 🔗 *Antilink:* ${statusAntilink}\n`;
-                txt += `» 👁️ *Detect:* ${statusDetect}\n\n`;
-                txt += `> ✰ Usa ${hasPrefix ? prefix : ''}función on/off para cambiar los ajustes.`;
-                return m.reply(txt);
-            }
-            feature = args[0].toLowerCase();
-            action = args[1].toLowerCase();
+        if (body.includes('setup') || body.includes('config')) {
+            feature = args[0]?.toLowerCase();
+            action = args[1]?.toLowerCase();
         } else {
-            feature = commandUsed;
+            const prefixes = ['#', '!', '.', '/'];
+            const firstWord = body.split(/ +/)[0];
+            const hasPrefix = prefixes.some(p => firstWord.startsWith(p));
+            feature = hasPrefix ? firstWord.slice(1) : firstWord;
             action = args[0]?.toLowerCase();
         }
 
         if (!['welcome', 'antilink', 'detect'].includes(feature)) {
-            return m.reply('Esa opción no es válida. Elige entre: welcome, antilink o detect.');
+            const statusWelcome = chatConfig.welcome ? 'Activado' : 'Desactivado';
+            const statusAntilink = chatConfig.antilink ? 'Activado' : 'Desactivado';
+            const statusDetect = chatConfig.detect ? 'Activado' : 'Desactivado';
+
+            let txt = `*✿︎ \`CONFIGURACIÓN DEL GRUPO\` ✿︎*\n\n`;
+            txt += `» 👋 *Welcome:* ${statusWelcome}\n`;
+            txt += `» 🔗 *Antilink:* ${statusAntilink}\n`;
+            txt += `» 👁️ *Detect:* ${statusDetect}\n\n`;
+            txt += `> ✰ Usa la función seguida de on/off.\n`;
+            txt += `> ✰ Ejemplo: welcome off`;
+            return m.reply(txt);
         }
 
         if (!action || !['on', 'off'].includes(action)) {
-            return m.reply('Estado incorrecto. Usa "on" para activar o "off" para desactivar.');
+            return m.reply(`*✿︎ \`ERROR\` ✿︎*\n\n» Estado incorrecto. Usa *on* para activar o *off* para desactivar.\n\n> ✰ Ejemplo: ${feature} on`);
         }
 
         const isTrue = action === 'on';
@@ -87,3 +74,5 @@ export default {
         return m.reply(res);
     }
 };
+
+export default configCommand;
