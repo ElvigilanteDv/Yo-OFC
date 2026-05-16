@@ -6,7 +6,7 @@ const databasePath = path.resolve('./jsons/grupos.json');
 
 const configOnOff = {
     name: 'config',
-    alias: ['detect', 'antilink', 'pokemon', 'welcome'],
+    alias: ['detect', 'antilink'],
     category: 'grupo',
     desc: 'Configura las funciones del grupo con on/off.',
     isAdmin: true,
@@ -26,7 +26,7 @@ const configOnOff = {
             action = args[0]?.toLowerCase();
         }
 
-        const validFeatures = ['detect', 'antilink', 'pokemon', 'welcome'];
+        const validFeatures = ['detect', 'antilink'];
         if (!validFeatures.includes(feature)) {
             let list = validFeatures.map(f => `*${config.visuals.emoji3}* \`${usedPrefix}${f} on/off\``).join('\n');
             return m.reply(`*${config.visuals.emoji2}* \`Opción Inválida\`\n\nFunciones disponibles:\n${list}`);
