@@ -12,7 +12,7 @@ const crimeCommand = {
 
     run: async (conn, m) => {
         try {
-            const userJid = m.sender.replace(/:.*@/g, '@');
+            const userJid = m.sender.split('@')[0].split(':')[0] + '@s.whatsapp.net';
             const ahora = new Date();
             const cooldown = 20 * 60 * 1000;
 
