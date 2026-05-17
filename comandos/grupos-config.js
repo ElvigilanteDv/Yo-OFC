@@ -1,3 +1,5 @@
+import { database } from '../database.js';
+
 const configCommand = {
     name: 'welcome',
     alias: ['antilink', 'detect', 'setup', 'config'],
@@ -13,18 +15,12 @@ const configCommand = {
             return m.reply('Necesitas ser administrador del grupo para usar este comando.');
         }
 
-        if (!global.db.data.chats[m.chat]) {
-            global.db.data.chats[m.chat] = { 
-                welcome: true,
-                antilink: true,
-                detect: true,
-                rolls: {},
-                rpg: {},
-                gacha: {}
-            };
+        let dbChat = await database.getChat(m.chat);
+        if (!dbChat) {
+            dbChat = { welcome: true, antilink: true, detect: true };
+            await database.saveChat(m.chat, dbChat);
         }
 
-        const chatConfig = global.db.data.chats[m.chat];
         const body = (m.message.conversation || m.message.extendedTextMessage?.text || "").toLowerCase();
         
         let feature;
@@ -42,9 +38,9 @@ const configCommand = {
         }
 
         if (!['welcome', 'antilink', 'detect'].includes(feature)) {
-            const statusWelcome = chatConfig.welcome ? 'Activado' : 'Desactivado';
-            const statusAntilink = chatConfig.antilink ? 'Activado' : 'Desactivado';
-            const statusDetect = chatConfig.detect ? 'Activado' : 'Desactivado';
+            const statusWelcome = dbChat.welcome ? 'Activado' : 'Desactivado';
+            const statusAntilink = dbChat.antilink ? 'Activado' : 'Desactivado';
+            const statusDetect = dbChat.detect ? 'Activado' : 'Desactivado';
 
             let txt = `*✿︎ \`CONFIGURACIÓN DEL GRUPO\` ✿︎*\n\n`;
             txt += `» 👋 *Welcome:* ${statusWelcome}\n`;
@@ -61,11 +57,13 @@ const configCommand = {
 
         const isTrue = action === 'on';
 
-        if (chatConfig[feature] === isTrue) {
+        if (dbChat[feature] === isTrue) {
             return m.reply(`*✿︎* La función *${feature}* ya se encuentra ${isTrue ? '*activada*' : '*desactivada*'}.`);
         }
 
-        chatConfig[feature] = isTrue;
+        dbChat[feature] = isTrue;
+        await database.saveChat(m.chat, dbChat);
+        global.db.data.chats[m.chat] = { ...global.db.data.chats[m.chat], ...dbChat };
 
         let res = `*✿︎ \`CONFIG UPDATE\` ✿︎*\n\n`;
         res += `» Haz ${isTrue ? 'Activado' : 'Desactivado'} la función *${feature.toUpperCase()}*\n\n`;
