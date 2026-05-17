@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 import { crimeFrases, failFrases } from './frases/crimen.js';
 
 const crimeCommand = {
@@ -11,14 +12,18 @@ const crimeCommand = {
 
     run: async (conn, m) => {
         try {
-            const user = m.sender.replace(/:.*@/g, '@');
-            const ahora = Date.now();
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            const ahora = new Date();
             const cooldown = 20 * 60 * 1000;
 
-            if (!global.db.data.users[user]) global.db.data.users[user] = {};
-            const userDb = global.db.data.users[user];
+            let userDb = await database.getUser(userJid);
+            
+            if (!userDb) {
+                userDb = { jid: userJid, wallet: 0, last_claim: new Date(0) };
+            }
 
-            const tiempoPasado = ahora - (userDb.lastCrime || 0);
+            const lastCrimeTime = new Date(userDb.last_claim).getTime();
+            const tiempoPasado = ahora.getTime() - lastCrimeTime;
 
             if (tiempoPasado < cooldown) {
                 const restante = cooldown - tiempoPasado;
@@ -28,13 +33,13 @@ const crimeCommand = {
             }
 
             const exito = Math.random() > 0.3;
-            userDb.lastCrime = ahora;
+            userDb.last_claim = ahora;
 
             if (exito) {
                 const fr = crimeFrases[Math.floor(Math.random() * crimeFrases.length)];
                 const recompensa = Math.floor(Math.random() * (fr.max - fr.min + 1)) + fr.min;
 
-                userDb.wallet = (userDb.wallet || 0) + recompensa;
+                userDb.wallet = parseInt(userDb.wallet || 0) + recompensa;
 
                 let texto = `*${config.visuals.emoji3}* \`CRIMEN EXITOSO\` *${config.visuals.emoji3}*\n\n`;
                 texto += `${fr.text}\n`;
@@ -46,6 +51,8 @@ const crimeCommand = {
                 const fail = failFrases[Math.floor(Math.random() * failFrases.length)];
                 m.reply(`*${config.visuals.emoji2}* \`OPERACIÓN FALLIDA\`\n\n${fail}`);
             }
+
+            await database.saveUser(userJid, userDb);
 
         } catch (e) {
             console.error(e);
