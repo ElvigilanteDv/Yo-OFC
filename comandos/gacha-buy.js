@@ -1,9 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import { config } from '../config.js';
-
-const gachaPath = path.resolve('./config/database/gacha/gacha_list.json');
-const baseGroup = "120363423871589037@g.us";
+import { database } from '../database.js';
 
 const buyCommand = {
     name: 'buy',
@@ -13,49 +9,42 @@ const buyCommand = {
     noPrefix: true,
     isGroup: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m, { args }) => {
         try {
             const group = m.chat;
-            const buyer = m.sender.replace(/:.*@/g, '@');
+            const buyerJid = m.sender;
             const pjId = args[0];
 
             if (!pjId) return m.reply(`*${config.visuals.emoji2}* Indica el ID del personaje.`);
 
-            if (!global.db.data.chats[group].shop || !global.db.data.chats[group].shop[pjId]) {
+            const item = await database.getShopItem(group, pjId);
+            if (!item) {
                 return m.reply(`*${config.visuals.emoji2}* Ese personaje no está en venta en este grupo.`);
             }
 
-            const item = global.db.data.chats[group].shop[pjId];
-            const seller = item.seller.replace(/:.*@/g, '@');
-            const price = item.salePrice;
+            const sellerJid = item.seller;
+            const price = Number(item.salePrice);
 
-            if (buyer === seller) return m.reply(`*${config.visuals.emoji2}* No puedes comprar tu propio personaje.`);
+            if (buyerJid === sellerJid) return m.reply(`*${config.visuals.emoji2}* No puedes comprar tu propio personaje.`);
 
-            if (!global.db.data.users[buyer]) global.db.data.users[buyer] = { wallet: 0 };
-            if (!global.db.data.users[seller]) global.db.data.users[seller] = { wallet: 0 };
+            let buyerDb = await database.getUser(buyerJid);
+            let sellerDb = await database.getUser(sellerJid);
 
-            const buyerDb = global.db.data.users[buyer];
-            const sellerDb = global.db.data.users[seller];
-
-            if ((buyerDb.wallet || 0) < price) {
-                return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en tu cartera (¥${price.toLocaleString()}).`);
+            if (!buyerDb || Number(buyerDb.wallet || 0) < price) {
+                return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en tu cartera.`);
             }
 
-            buyerDb.wallet -= price;
-            sellerDb.wallet += price;
+            if (!sellerDb) sellerDb = { wallet: 0, bank: 0 };
 
-            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
+            buyerDb.wallet = Number(buyerDb.wallet) - price;
+            sellerDb.wallet = Number(sellerDb.wallet || 0) + price;
 
-            global.db.data.chats[group].gacha[pjId] = {
-                status: 'domado',
-                owner: buyer
-            };
-
-            delete global.db.data.chats[group].shop[pjId];
+            await database.updateCharacterOwner(group, pjId, buyerJid);
+            await database.removeFromShop(group, pjId);
+            await database.saveUser(buyerJid, buyerDb);
+            await database.saveUser(sellerJid, sellerDb);
 
             await m.reply(`*${config.visuals.emoji3}* ¡Compra exitosa!\n\nHas adquirido a *${item.name}* por **¥${price.toLocaleString()}**.`);
-
-            const sellerJid = seller.includes('@') ? seller : seller + '@s.whatsapp.net';
 
             conn.sendMessage(sellerJid, { 
                 text: `*${config.visuals.emoji3}* ¡Tu personaje *${item.name}* ha sido vendido!\nRecibiste **¥${price.toLocaleString()}** en tu cartera.` 
