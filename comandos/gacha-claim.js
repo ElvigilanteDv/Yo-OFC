@@ -14,24 +14,31 @@ const claimCommand = {
     noPrefix: true,
     isGroup: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m, { args }) => {
         try {
             const group = m.chat;
-            const userJid = m.sender.replace(/:.*@/g, '@');
-            const ahora = new Date();
+            const userJid = m.sender;
+            const ahora = Date.now();
             const tiempoEspera = 9 * 60 * 1000;
 
             let userDb = await database.getUser(userJid);
-            if (!userDb) userDb = { jid: userJid, wallet: 0, last_claim: new Date(0) };
+            if (!userDb) userDb = { wallet: 0, bank: 0, last_claim: 0 };
 
-            const lastClaim = new Date(userDb.last_claim).getTime();
-            const tiempoPasado = ahora.getTime() - lastClaim;
+            let lastClaimTime = 0;
+            try {
+                const dailyData = JSON.parse(userDb.last_claim);
+                lastClaimTime = dailyData.timeClaim || 0;
+            } catch {
+                lastClaimTime = new Date(userDb.last_claim).getTime() || 0;
+            }
+
+            const tiempoPasado = ahora - lastClaimTime;
 
             if (tiempoPasado < tiempoEspera) {
                 const faltante = tiempoEspera - tiempoPasado;
                 const minutos = Math.floor(faltante / 60000);
                 const segundos = Math.floor((faltante % 60000) / 1000);
-                return m.reply(`*${config.visuals.emoji2}* ¡Espera! Debes esperar **${minutos}m ${segundos}s** para reclamar otro personaje.`);
+                return m.reply(`*${config.visuals.emoji2}* ¡Espera! Debes esperar **${minutos}m ${segundos}s**.`);
             }
 
             if (!fs.existsSync(gachaPath)) return m.reply('Error: Base de datos gacha no encontrada.');
@@ -39,10 +46,10 @@ const claimCommand = {
             const plantillaPersonajes = rawData[baseGroup];
 
             let pjId = null;
-            if (args[0] && !isNaN(args[0])) {
+            if (args && args[0] && !isNaN(args[0])) {
                 pjId = args[0];
             } else if (m.quoted) {
-                const chatRolls = global.db.data.chats[group]?.rolls;
+                const chatRolls = global.lastRolls?.get(group);
                 if (chatRolls && chatRolls[m.quoted.id]) {
                     pjId = chatRolls[m.quoted.id].id;
                 }
@@ -52,27 +59,27 @@ const claimCommand = {
                 return m.reply(`*${config.visuals.emoji2}* Cita el mensaje del personaje que deseas reclamar.`);
             }
 
-            const infoGrupo = await database.getCharacterOwner(group, pjId);
-            if (infoGrupo && infoGrupo.status !== 'libre') {
+            const infoPj = await database.getCharacterOwner(group, pjId);
+            if (infoPj && infoPj.status !== 'libre') {
                 return m.reply(`*${config.visuals.emoji2}* ¡Este personaje ya tiene dueño!`);
             }
 
             const pjPlantilla = plantillaPersonajes[pjId];
-            const saldo = parseInt(userDb.wallet || 0);
+            const wallet = Number(userDb.wallet || 0);
 
-            if (saldo < pjPlantilla.value) {
-                return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero (¥${pjPlantilla.value.toLocaleString()}) en tu cartera.`);
+            if (wallet < pjPlantilla.value) {
+                return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero (¥${pjPlantilla.value.toLocaleString()}).`);
             }
 
-            userDb.wallet = saldo - pjPlantilla.value;
-            userDb.last_claim = ahora;
+            userDb.wallet = wallet - pjPlantilla.value;
+            
+            let dailyData = {};
+            try { dailyData = JSON.parse(userDb.last_claim); } catch { dailyData = { time: 0, streak: 0 }; }
+            dailyData.timeClaim = ahora;
+            userDb.last_claim = JSON.stringify(dailyData);
 
             await database.claimCharacter(group, userJid, pjId);
             await database.saveUser(userJid, userDb);
-
-            if (m.quoted && global.db.data.chats[group]?.rolls) {
-                delete global.db.data.chats[group].rolls[m.quoted.id];
-            }
 
             m.reply(`*${config.visuals.emoji3}* ¡Felicidades! Has domado a *${pjPlantilla.name}* por ¥${pjPlantilla.value.toLocaleString()}.`);
 
