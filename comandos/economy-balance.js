@@ -21,8 +21,12 @@ const balanceCommand = {
 
             const userDb = await database.getUser(targetJid);
 
-            const wallet = userDb ? Number(userDb.wallet || 0) : 0;
-            const bank = userDb ? Number(userDb.bank || 0) : 0;
+            if (!userDb) {
+                return m.reply(`*${config.visuals.emoji2}* El usuario no está registrado en el sistema financiero.`);
+            }
+
+            const wallet = Number(userDb.wallet || 0);
+            const bank = Number(userDb.bank || 0);
             const total = wallet + bank;
             const displayId = targetJid.split('@')[0].split(':')[0];
 
