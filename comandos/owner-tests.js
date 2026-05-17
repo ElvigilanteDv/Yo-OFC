@@ -1,38 +1,19 @@
 import { database } from '../database.js';
 
-const testCommand = {
-    name: 'test',
+const testAddCommand = {
+    name: 'testadd',
     category: 'debug',
-    desc: 'Prueba de escritura en SQLite.',
     noPrefix: true,
-
     run: async (conn, m) => {
         try {
-            const userJid = m.sender;
-            const premio = 50000;
-
-            const userDb = { 
-                wallet: premio, 
-                bank: 0, 
-                genre: 'Developer', 
-                marry: null, 
-                last_claim: new Date().toISOString() 
-            };
-
-            await database.saveUser(userJid, userDb);
-
-            let texto = `*🧪 TEST SQLITE (ESCRITURA)*\n\n`;
-            texto += `» *ID:* ${userJid}\n`;
-            texto += `» *Estado:* Datos enviados al archivo local.\n`;
-            texto += `» *Monto:* ¥${premio.toLocaleString()}\n\n`;
-            texto += `> Usa #testb para verificar la persistencia.`;
-
-            await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
-
+            const userDb = await database.getUser(m.sender) || { wallet: 0 };
+            userDb.wallet += 1000;
+            await database.saveUser(m.sender, userDb);
+            m.reply(`✅ Sumado ¥1,000. Total actual: ¥${userDb.wallet}`);
         } catch (e) {
-            m.reply('❌ Error en SQLite Write: ' + e.message);
+            m.reply('❌ Error: ' + e.message);
         }
     }
 };
 
-export default testCommand;
+export default testAddCommand;
