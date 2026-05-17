@@ -17,12 +17,9 @@ const crimeCommand = {
             const cooldown = 20 * 60 * 1000;
 
             let userDb = await database.getUser(userJid);
-            
-            if (!userDb) {
-                userDb = { jid: userJid, wallet: 0, last_claim: new Date(0) };
-            }
+            if (!userDb) userDb = { jid: userJid, wallet: 0, last_claim: new Date(0) };
 
-            const lastCrimeTime = new Date(userDb.last_claim).getTime();
+            const lastCrimeTime = new Date(userDb.last_claim || 0).getTime();
             const tiempoPasado = ahora.getTime() - lastCrimeTime;
 
             if (tiempoPasado < cooldown) {
@@ -39,7 +36,8 @@ const crimeCommand = {
                 const fr = crimeFrases[Math.floor(Math.random() * crimeFrases.length)];
                 const recompensa = Math.floor(Math.random() * (fr.max - fr.min + 1)) + fr.min;
 
-                userDb.wallet = parseInt(userDb.wallet || 0) + recompensa;
+                let currentWallet = parseInt(userDb.wallet || 0);
+                userDb.wallet = currentWallet + recompensa;
 
                 let texto = `*${config.visuals.emoji3}* \`CRIMEN EXITOSO\` *${config.visuals.emoji3}*\n\n`;
                 texto += `${fr.text}\n`;
