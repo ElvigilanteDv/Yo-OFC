@@ -1,7 +1,7 @@
 import { database, query } from '../database.js';
 
 const testCommand = {
-    name: 'test',
+    name: 'c',
     category: 'debug',
     desc: 'Fuerza la escritura limpia en PostgreSQL eliminando registros previos.',
     noPrefix: true,
