@@ -8,9 +8,9 @@ const baltopCommand = {
     desc: 'Visualiza el ranking de los usuarios más ricos.',
     noPrefix: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m, { args }) => {
         try {
-            let page = args[0] ? parseInt(args[0]) : 1;
+            let page = (args && args[0]) ? parseInt(args[0]) : 1;
             if (isNaN(page) || page < 1) page = 1;
 
             const pageSize = 10;
@@ -21,7 +21,7 @@ const baltopCommand = {
                  FROM users 
                  WHERE (wallet + bank) > 0 
                  ORDER BY total DESC 
-                 LIMIT $1 OFFSET $2`, 
+                 LIMIT ? OFFSET ?`, 
                 [pageSize, offset]
             );
 
@@ -35,8 +35,8 @@ const baltopCommand = {
 
             topUsers.forEach((user, index) => {
                 const userId = user.jid.split('@')[0];
-                const total = parseInt(user.total);
-                const bank = parseInt(user.bank);
+                const total = Number(user.total);
+                const bank = Number(user.bank);
                 list += `*${offset + index + 1}.* @${userId}\n`;
                 list += `» *Total:* ¥${total.toLocaleString()}\n`;
                 list += `» *Banco:* ¥${bank.toLocaleString()}\n\n`;
