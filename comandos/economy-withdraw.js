@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 
 const withdrawCommand = {
     name: 'withdraw',
@@ -8,17 +9,17 @@ const withdrawCommand = {
     noPrefix: true,
     isGroup: true,
 
-    run: async (conn, m, args) => {
+    run: async (conn, m, { args }) => {
         try {
-            const user = m.sender.replace(/:.*@/g, '@');
-            
-            if (!global.db.data.users[user]) global.db.data.users[user] = { wallet: 0, bank: 0 };
-            const userDb = global.db.data.users[user];
+            const userJid = m.sender;
+            let userDb = await database.getUser(userJid);
 
-            const bank = userDb.bank || 0;
+            if (!userDb) return m.reply(`*${config.visuals.emoji2}* No tienes una cuenta activa.`);
+
+            const bank = Number(userDb.bank || 0);
             let amount = args[0];
 
-            if (!amount) return m.reply(`*${config.visuals.emoji2}* \`FALTAN DATOS\`\n\nIngresa una cantidad o usa *all*.\n*Ejemplo:* #ret 5000`);
+            if (!amount) return m.reply(`*${config.visuals.emoji2}* \`FALTAN DATOS\`\n\nIngresa una cantidad o usa *all*.`);
 
             if (amount.toLowerCase() === 'all') {
                 amount = bank;
@@ -29,14 +30,15 @@ const withdrawCommand = {
             if (!amount || amount <= 0) return m.reply(`*${config.visuals.emoji2}* Cantidad inválida.`);
             if (bank < amount) return m.reply(`*${config.visuals.emoji2}* No tienes suficiente dinero en el banco.`);
 
-            userDb.bank = (userDb.bank || 0) - amount;
-            userDb.wallet = (userDb.wallet || 0) + amount;
+            userDb.bank = bank - amount;
+            userDb.wallet = Number(userDb.wallet || 0) + amount;
 
             let texto = `*${config.visuals.emoji3}* \`RETIRO EXITOSO\` *${config.visuals.emoji3}*\n\n`;
             texto += `*${config.visuals.emoji4} Retirado:* ¥${amount.toLocaleString()}\n`;
             texto += `*${config.visuals.emoji} Cartera:* ¥${userDb.wallet.toLocaleString()}\n\n`;
             texto += `> *Banco:* ¥${userDb.bank.toLocaleString()}`;
 
+            await database.saveUser(userJid, userDb);
             await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
 
         } catch (e) {
