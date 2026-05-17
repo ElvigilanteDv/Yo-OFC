@@ -16,13 +16,13 @@ const balanceCommand = {
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
                 targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
+                targetJid = m.quoted.sender || m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
             const userDb = await database.getUser(targetJid);
 
-            const wallet = userDb ? parseInt(userDb.wallet || 0) : 0;
-            const bank = userDb ? parseInt(userDb.bank || 0) : 0;
+            const wallet = userDb ? Number(userDb.wallet || 0) : 0;
+            const bank = userDb ? Number(userDb.bank || 0) : 0;
             const total = wallet + bank;
             const displayId = targetJid.split('@')[0].split(':')[0];
 
