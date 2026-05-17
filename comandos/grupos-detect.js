@@ -1,9 +1,11 @@
+import { database } from '../database.js';
+
 export const detectHandler = (conn) => {
     conn.ev.on('group-participants.update', async (anu) => {
         try {
             const id = anu.id;
-            const chat = global.db.data.chats[id];
-            if (chat && chat.detect === false) return;
+            const dbChat = await database.getChat(id);
+            if (dbChat && dbChat.detect === false) return;
 
             const metadata = await conn.groupMetadata(id).catch(() => null);
             if (!metadata) return;
@@ -37,8 +39,8 @@ export const detectHandler = (conn) => {
         if (!m.messageStubType) return;
 
         const id = m.key.remoteJid;
-        const chat = global.db.data.chats[id];
-        if (chat && chat.detect === false) return;
+        const dbChat = await database.getChat(id);
+        if (dbChat && dbChat.detect === false) return;
 
         const metadata = await conn.groupMetadata(id).catch(() => null);
         const participants = metadata ? metadata.participants.map(p => p.id) : [];
