@@ -1,1 +1,114 @@
-import pg from 'pg';const{Pool}=pg;const _0x1a2b=Buffer.from('OTUuMjE3LjE1Ny4xNTc=','base64').toString();const _0x3c4d=Buffer.from('RGV2LUZlbGl4T2Zj','base64').toString();const _0x5e6f=Buffer.from('TWFudGlzMjAyNg==','base64').toString();const pool=new Pool({user:_0x3c4d,host:_0x1a2b,database:'kazumadb',password:_0x5e6f,port:5432,max:20,idleTimeoutMillis:30000,connectionTimeoutMillis:10000});const normalizeJid=(_)=>_?_.split('@')[0].split(':')[0].trim()+'@s.whatsapp.net':null;export const query=(t,p)=>pool.query(t,p);export const database={getChat:async(j)=>{const r=await pool.query('SELECT * FROM chats WHERE jid = $1',[j]);return r.rows[0]||null},getUser:async(j)=>{const c=normalizeJid(j);const r=await pool.query('SELECT * FROM users WHERE jid = $1',[c]);return r.rows[0]||null},saveChat:async(j,d)=>{const{welcome:w,antilink:a,detect:e}=d;await pool.query('INSERT INTO chats (jid, welcome, antilink, detect) VALUES ($1, $2, $3, $4) ON CONFLICT (jid) DO UPDATE SET welcome = EXCLUDED.welcome, antilink = EXCLUDED.antilink, detect = EXCLUDED.detect;',[j,w,a,e])},saveUser:async(j,d)=>{const c=normalizeJid(j);const w=Math.floor(Number(d.wallet||0)),b=Math.floor(Number(d.bank||0)),g=String(d.genre||'No definido'),m=d.marry||null,l=new Date();try{const check=await pool.query('SELECT jid FROM users WHERE jid = $1',[c]);if(check.rows.length>0){await pool.query('UPDATE users SET wallet=$1, bank=$2, genre=$3, marry=$4, last_claim=$5 WHERE jid=$6',[w,b,g,m,l,c])}else{await pool.query('INSERT INTO users (jid, wallet, bank, genre, marry, last_claim) VALUES ($1, $2, $3, $4, $5, $6)',[c,w,b,g,m,l])}}catch(e){console.error('DATABASE_FATAL_ERROR',e)}},getHarem:async(g,u)=>{const c=normalizeJid(u);const r=await pool.query('SELECT character_id FROM gacha_ownership WHERE group_jid = $1 AND user_jid = $2',[g,c]);return r.rows},claimCharacter:async(g,u,i)=>{const c=normalizeJid(u);await pool.query('INSERT INTO gacha_ownership (group_jid, user_jid, character_id, status) VALUES ($1, $2, $3, \'domado\') ON CONFLICT (group_jid, character_id) DO UPDATE SET user_jid = EXCLUDED.user_jid, status = \'domado\';',[g,c,i])},getCharacterOwner:async(g,i)=>{const r=await pool.query('SELECT user_jid, status FROM gacha_ownership WHERE group_jid = $1 AND character_id = $2',[g,i]);return r.rows[0]||null},listShop:async(g)=>{const r=await pool.query('SELECT * FROM gacha_shop WHERE group_jid = $1 ORDER BY listed_at DESC',[g]);return r.rows},listCharacter:async(g,s,i,n,p)=>{const c=normalizeJid(s),l=await pool.connect();try{await l.query('BEGIN');await l.query('INSERT INTO gacha_shop (group_jid, seller_jid, character_id, character_name, sale_price) VALUES ($1, $2, $3, $4, $5)',[g,c,i,n,p]);await l.query('UPDATE gacha_ownership SET status = \'en_venta\' WHERE group_jid = $1 AND character_id = $2',[g,i]);await l.query('COMMIT')}catch(e){await l.query('ROLLBACK');throw e}finally{l.release()}},buyCharacter:async(g,b,i,p)=>{const c=normalizeJid(b),l=await pool.connect();try{await l.query('BEGIN');const sR=await l.query('SELECT seller_jid FROM gacha_shop WHERE group_jid = $1 AND character_id = $2',[g,i]);const sJ=sR.rows[0].seller_jid;await l.query('UPDATE users SET wallet = wallet - $1 WHERE jid = $2',[p,c]);await l.query('UPDATE users SET wallet = wallet + $1 WHERE jid = $2',[p,sJ]);await l.query('UPDATE gacha_ownership SET user_jid = $1, status = \'domado\' WHERE group_jid = $2 AND character_id = $3',[c,g,i]);await l.query('DELETE FROM gacha_shop WHERE group_jid = $1 AND character_id = $2',[g,i]);await l.query('COMMIT');return sJ}catch(e){await l.query('ROLLBACK');throw e}finally{l.release()}}};
+import Database from 'better-sqlite3';
+import { join } from 'path';
+
+const db = new Database(join(process.cwd(), 'database.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = normal');
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        jid TEXT PRIMARY KEY,
+        wallet INTEGER DEFAULT 0,
+        bank INTEGER DEFAULT 0,
+        genre TEXT DEFAULT 'No definido',
+        marry TEXT DEFAULT NULL,
+        last_claim TEXT DEFAULT '1970-01-01T00:00:00.000Z'
+    );
+    CREATE TABLE IF NOT EXISTS chats (
+        jid TEXT PRIMARY KEY,
+        welcome INTEGER DEFAULT 0,
+        antilink INTEGER DEFAULT 0,
+        detect INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS gacha_ownership (
+        group_jid TEXT,
+        user_jid TEXT,
+        character_id TEXT,
+        status TEXT DEFAULT 'domado',
+        PRIMARY KEY (group_jid, character_id)
+    );
+    CREATE TABLE IF NOT EXISTS gacha_shop (
+        group_jid TEXT,
+        seller_jid TEXT,
+        character_id TEXT,
+        character_name TEXT,
+        sale_price INTEGER,
+        listed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (group_jid, character_id)
+    );
+`);
+
+const normalizeJid = (j) => j ? j.split('@')[0].split(':')[0].trim() + '@s.whatsapp.net' : null;
+
+export const database = {
+    getUser: async (j) => {
+        const c = normalizeJid(j);
+        return db.prepare('SELECT * FROM users WHERE jid = ?').get(c) || null;
+    },
+    saveUser: async (j, d) => {
+        const c = normalizeJid(j);
+        const { wallet = 0, bank = 0, genre = 'No definido', marry = null, last_claim = new Date().toISOString() } = d;
+        db.prepare(`
+            INSERT INTO users (jid, wallet, bank, genre, marry, last_claim)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(jid) DO UPDATE SET
+            wallet = excluded.wallet, bank = excluded.bank, genre = excluded.genre,
+            marry = excluded.marry, last_claim = excluded.last_claim
+        `).run(c, wallet, bank, genre, marry, last_claim);
+    },
+    getChat: async (j) => {
+        return db.prepare('SELECT * FROM chats WHERE jid = ?').get(j) || null;
+    },
+    saveChat: async (j, d) => {
+        const { welcome = 0, antilink = 0, detect = 0 } = d;
+        db.prepare(`
+            INSERT INTO chats (jid, welcome, antilink, detect)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(jid) DO UPDATE SET
+            welcome = excluded.welcome, antilink = excluded.antilink, detect = excluded.detect
+        `).run(j, welcome, antilink, detect);
+    },
+    getHarem: async (g, u) => {
+        const c = normalizeJid(u);
+        return db.prepare('SELECT character_id FROM gacha_ownership WHERE group_jid = ? AND user_jid = ?').all(g, c);
+    },
+    claimCharacter: async (g, u, i) => {
+        const c = normalizeJid(u);
+        db.prepare(`
+            INSERT INTO gacha_ownership (group_jid, user_jid, character_id, status)
+            VALUES (?, ?, ?, 'domado')
+            ON CONFLICT(group_jid, character_id) DO UPDATE SET user_jid = excluded.user_jid, status = 'domado'
+        `).run(g, c, i);
+    },
+    getCharacterOwner: async (g, i) => {
+        return db.prepare('SELECT user_jid, status FROM gacha_ownership WHERE group_jid = ? AND character_id = ?').get(g, i) || null;
+    },
+    listShop: async (g) => {
+        return db.prepare('SELECT * FROM gacha_shop WHERE group_jid = ? ORDER BY listed_at DESC').all(g);
+    },
+    listCharacter: async (g, s, i, n, p) => {
+        const c = normalizeJid(s);
+        const t = db.transaction(() => {
+            db.prepare('INSERT INTO gacha_shop (group_jid, seller_jid, character_id, character_name, sale_price) VALUES (?, ?, ?, ?, ?)').run(g, c, i, n, p);
+            db.prepare('UPDATE gacha_ownership SET status = "en_venta" WHERE group_jid = ? AND character_id = ?').run(g, i);
+        });
+        t();
+    },
+    buyCharacter: async (g, b, i, p) => {
+        const c = normalizeJid(b);
+        const s = db.prepare('SELECT seller_jid FROM gacha_shop WHERE group_jid = ? AND character_id = ?').get(g, i);
+        if (!s) throw new Error('404');
+        const t = db.transaction(() => {
+            db.prepare('UPDATE users SET wallet = wallet - ? WHERE jid = ?').run(p, c);
+            db.prepare('UPDATE users SET wallet = wallet + ? WHERE jid = ?').run(p, s.seller_jid);
+            db.prepare('UPDATE gacha_ownership SET user_jid = ?, status = "domado" WHERE group_jid = ? AND character_id = ?').run(c, g, i);
+            db.prepare('DELETE FROM gacha_shop WHERE group_jid = ? AND character_id = ?').run(g, i);
+        });
+        t();
+        return s.seller_jid;
+    }
+};
+
+export const query = async (t, p = []) => {
+    return { rows: db.prepare(t).all(...p) };
+};
