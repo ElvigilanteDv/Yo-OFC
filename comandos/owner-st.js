@@ -1,36 +1,41 @@
 import { database } from '../database.js';
 
 const testBCommand = {
-    name: 'testb',
+    name: 'b',
     category: 'debug',
-    desc: 'Lectura cruda de la base de datos para depuración.',
+    desc: 'Consulta técnica de la DB para verificar el guardado real.',
     noPrefix: true,
 
     run: async (conn, m) => {
         try {
             const userJid = m.sender;
             
-            // 1. Llamada directa a la función getUser de database.js
+            // Leemos directamente lo que devuelve el motor de base de datos
             const userDb = await database.getUser(userJid);
 
             if (!userDb) {
-                return m.reply(`*❌ ERROR DE LECTURA*\n\n> No se encontró ningún registro para:\n> ${userJid}\n\n_Asegúrate de haber usado #test primero._`);
+                return m.reply(`*⚠️ SIN DATOS*\n\n> No se encontró registro en la DB para:\n> ${userJid}`);
             }
 
-            // 2. Mostrar exactamente qué devuelve la base de datos
-            let texto = `*🔍 LECTURA RAW DE DB*\n\n`;
-            texto += `» *JID en DB:* ${userDb.jid}\n`;
-            texto += `» *Cartera (Raw):* ${userDb.wallet}\n`;
-            texto += `» *Banco (Raw):* ${userDb.bank}\n`;
-            texto += `» *Tipo de Wallet:* ${typeof userDb.wallet}\n`;
-            texto += `» *Último Claim:* ${userDb.last_claim}\n\n`;
-            texto += `> Si Cartera dice 0 pero en el VPS ves números, el problema es el normalizeJid.`;
+            // Mostramos los valores exactos
+            let texto = `*🔍 REVISIÓN DE BASE DE DATOS*\n\n`;
+            texto += `» *ID Detectado:* ${userDb.jid}\n`;
+            texto += `» *Billetera:* ¥${userDb.wallet}\n`;
+            texto += `» *Banco:* ¥${userDb.bank}\n`;
+            texto += `» *Tipo de Dato:* ${typeof userDb.wallet}\n`;
+            texto += `» *Última Actividad:* ${userDb.last_claim}\n\n`;
+            
+            if (userDb.wallet == 0) {
+                texto += `> *Estado:* ❌ Fallo de persistencia. El bot registra pero no guarda el monto.`;
+            } else {
+                texto += `> *Estado:* ✅ ÉXITO. La base de datos está guardando correctamente.`;
+            }
 
             await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
 
         } catch (e) {
             console.error('ERROR EN TESTB:', e);
-            m.reply('Error en testb: ' + e.message);
+            m.reply('❌ Error al leer la DB: ' + e.message);
         }
     }
 };
