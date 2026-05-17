@@ -11,27 +11,26 @@ const balanceCommand = {
 
     run: async (conn, m) => {
         try {
-            let rawJid = m.sender;
+            let targetJid = m.sender;
 
             if (m.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
-                rawJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
+                targetJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
             } else if (m.quoted) {
-                rawJid = m.quoted.key.participant || m.quoted.key.remoteJid;
+                targetJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const targetJid = rawJid.split('@')[0].split(':')[0] + '@s.whatsapp.net';
             const userDb = await database.getUser(targetJid);
 
             const wallet = userDb ? parseInt(userDb.wallet || 0) : 0;
             const bank = userDb ? parseInt(userDb.bank || 0) : 0;
             const total = wallet + bank;
-            const userId = targetJid.split('@')[0];
+            const displayId = targetJid.split('@')[0].split(':')[0];
 
             let texto = `*${config.visuals.emoji3} BALANCE DE CUENTA ${config.visuals.emoji3}*\n\n`;
             texto += `» *Cartera:* ¥${wallet.toLocaleString()}\n`;
             texto += `» *Banco:* ¥${bank.toLocaleString()}\n\n`;
             texto += `> *Total:* ¥${total.toLocaleString()}\n`;
-            texto += `> *Usuario:* @${userId}`;
+            texto += `> *Usuario:* @${displayId}`;
 
             await conn.sendMessage(m.chat, { 
                 text: texto, 
