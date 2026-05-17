@@ -1,11 +1,12 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 
 export default function welcomeHandler(conn) {
     conn.ev.on('group-participants.update', async (update) => {
         const { id, participants, action } = update;
 
-        const chat = global.db.data.chats[id];
-        if (chat && chat.welcome === false) return;
+        const dbChat = await database.getChat(id);
+        if (dbChat && dbChat.welcome === false) return;
 
         const metadata = await conn.groupMetadata(id).catch(() => null);
         if (!metadata) return;
@@ -31,7 +32,7 @@ export default function welcomeHandler(conn) {
                 txt += `✰ para ver mi lista de comandos usa el comando \`${prefix}help\`\n`;
                 txt += `> kazuma.giize.com\n`;
                 txt += `╰━━━━━━━━━━━━━━━╯`;
-                
+
                 await conn.sendMessage(id, { 
                     image: { url: pp }, 
                     caption: txt, 
@@ -44,7 +45,7 @@ export default function welcomeHandler(conn) {
                 txt += `✰ esperamos que vuelvas pronto por aquí\n`;
                 txt += `> kazuma.giize.com\n`;
                 txt += `╰━━━━━━━━━━━━━━━╯`;
-                
+
                 await conn.sendMessage(id, { 
                     image: { url: pp }, 
                     caption: txt, 
