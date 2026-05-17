@@ -19,7 +19,7 @@ const balanceCommand = {
                 rawJid = m.quoted.key.participant || m.quoted.key.remoteJid;
             }
 
-            const targetJid = rawJid.replace(/:.*@/g, '@');
+            const targetJid = rawJid.split('@')[0].split(':')[0] + '@s.whatsapp.net';
             const userDb = await database.getUser(targetJid);
 
             const wallet = userDb ? parseInt(userDb.wallet || 0) : 0;
