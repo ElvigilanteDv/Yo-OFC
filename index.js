@@ -18,6 +18,7 @@ import CFonts from 'cfonts';
 import { config } from './config.js';
 import { logger } from './config/print.js';
 import { pixelHandler } from './pixel.js';
+import { database } from './database.js';
 
 import { detectHandler } from './comandos/grupos-detect.js';
 import antiLinkHandler from './comandos/grupos-antilink.js';
@@ -217,6 +218,33 @@ async function startBot() {
         m.sender = conn.decodeJid ? conn.decodeJid(m.key.participant || m.key.remoteJid) : (m.key.participant || m.key.remoteJid);
         const isGroup = m.chat.endsWith('@g.us');
 
+        const dbUser = await database.getUser(m.sender);
+        if (dbUser) {
+            global.db.data.users[m.sender] = { ...dbUser, daily: dbUser.daily || { lastClaim: 0, streak: 0 } };
+        } else {
+            const newUser = {
+                wallet: 0,
+                bank: 0,
+                genre: 'No definido',
+                marry: null,
+                inventory: {},
+                daily: { lastClaim: 0, streak: 0 }
+            };
+            await database.saveUser(m.sender, newUser);
+            global.db.data.users[m.sender] = newUser;
+        }
+
+        if (isGroup) {
+            const dbChat = await database.getChat(m.chat);
+            if (dbChat) {
+                global.db.data.chats[m.chat] = { ...dbChat, rolls: {}, rpg: {}, gacha: {} };
+            } else {
+                const newChat = { welcome: true, antilink: true, detect: true };
+                await database.saveChat(m.chat, newChat);
+                global.db.data.chats[m.chat] = { ...newChat, rolls: {}, rpg: {}, gacha: {} };
+            }
+        }
+
         const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
         const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
         const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
@@ -250,26 +278,6 @@ async function startBot() {
         );
 
         if (m.key.fromMe && !foundPrefix && !isNoPrefixCmd) return;
-
-        if (!global.db.data.chats[m.chat]) {
-            global.db.data.chats[m.chat] = { 
-                rolls: {},
-                rpg: {},
-                gacha: {}
-            };
-        }
-
-        if (!global.db.data.users[m.sender]) {
-            global.db.data.users[m.sender] = {
-                wallet: 0,
-                bank: 0,
-                daily: { lastClaim: 0, streak: 0 },
-                inventory: {},
-                marry: null,
-                genre: 'No definido',
-                birthday: { date: 'No definido', age: 'No definida' }
-            };
-        }
 
         global.lastMessageMap.set(m.sender, Date.now());
 
@@ -311,6 +319,9 @@ async function startBot() {
         logger(m, conn);
         await antiLinkHandler(conn, m);
         await pixelHandler(conn, m, config);
+
+        await database.saveUser(m.sender, global.db.data.users[m.sender]);
+        if (isGroup) await database.saveChat(m.chat, global.db.data.chats[m.chat]);
     });
 }
 
