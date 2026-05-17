@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
@@ -17,15 +18,18 @@ const rwCommand = {
     run: async (conn, m) => {
         try {
             const group = m.chat;
-            const user = m.sender;
-            const ahora = Date.now();
-
-            if (!global.db.data.users[user]) global.db.data.users[user] = {};
-            const userDb = global.db.data.users[user];
+            const userJid = m.sender.replace(/:.*@/g, '@');
+            const ahora = new Date();
             const cooldownTime = 10 * 60 * 1000;
 
-            if (userDb.lastGachaRoll && ahora - userDb.lastGachaRoll < cooldownTime) {
-                const restante = userDb.lastGachaRoll + cooldownTime - ahora;
+            let userDb = await database.getUser(userJid);
+            if (!userDb) userDb = { jid: userJid, wallet: 0, metadata: {} };
+
+            const lastRoll = userDb.metadata?.lastGachaRoll ? new Date(userDb.metadata.lastGachaRoll).getTime() : 0;
+            const tiempoPasado = ahora.getTime() - lastRoll;
+
+            if (tiempoPasado < cooldownTime) {
+                const restante = cooldownTime - tiempoPasado;
                 const minutos = Math.floor(restante / 60000);
                 const segundos = Math.floor((restante % 60000) / 1000);
                 return m.reply(`*${config.visuals.emoji2}* ¡Espera! Faltan ${minutos} min y ${segundos} seg.`);
@@ -36,41 +40,24 @@ const rwCommand = {
             const plantillaPersonajes = rawData[baseGroup];
             const allIds = Object.keys(plantillaPersonajes);
 
-            if (!global.db.data.chats[group].gacha) global.db.data.chats[group].gacha = {};
-            const dbGrupo = global.db.data.chats[group].gacha;
-
-            const esDomadoRoll = Math.random() < 0.01;
-            let pool = [];
-
-            if (esDomadoRoll) {
-                pool = allIds.filter(id => dbGrupo[id] && dbGrupo[id].status === 'domado');
-            }
-
-            if (pool.length === 0) {
-                pool = allIds.filter(id => !dbGrupo[id] || dbGrupo[id].status === 'libre');
-                if (pool.length === 0) pool = allIds;
-            }
-
-            const randomId = pool[Math.floor(Math.random() * pool.length)];
+            const randomId = allIds[Math.floor(Math.random() * allIds.length)];
             const infoFija = plantillaPersonajes[randomId];
-            const infoGrupo = dbGrupo[randomId] || { status: 'libre', owner: null };
+            
+            const infoGrupo = await database.getCharacterOwner(group, randomId);
+            const status = infoGrupo ? infoGrupo.status : 'libre';
+            const owner = infoGrupo ? infoGrupo.user_jid : null;
 
             let imageUrl = infoFija.url;
-
             if (!imageUrl) {
-                const query = `${infoFija.name} ${infoFija.source}`;
-                const apiUrl = `https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(query)}&apiKey=kzm-OifUrFOl-oSSLeonc`;
-                
+                const queryStr = `${infoFija.name} ${infoFija.source}`;
+                const apiUrl = `https://${config.kzmUrl}/api/search/pinterest?query=${encodeURIComponent(queryStr)}&apiKey=kzm-OifUrFOl-oSSLeonc`;
                 try {
                     const response = await axios.get(apiUrl);
                     if (response.data.status && response.data.data.length > 0) {
                         imageUrl = response.data.data[0].image_url;
                     }
-                } catch (apiErr) {
-                    console.error('Error llamando a Kazuma API:', apiErr);
-                }
+                } catch (e) {}
             }
-
             if (!imageUrl) imageUrl = 'https://telegra.ph/file/0cf76964ff002f232491a.jpg';
 
             let caption = `*» (❍ᴥ❍ʋ) \`GACHA ROLL\` «*\n\n`;
@@ -78,26 +65,28 @@ const rwCommand = {
             caption += `*ID »* ${randomId}\n`;
             caption += `*Fuente:* ${infoFija.source}\n`;
             caption += `*Valor:* ¥${infoFija.value.toLocaleString()}\n`;
-            caption += `*Estado:* ${infoGrupo.status === 'libre' ? 'Libre' : 'Domado'}\n`;
+            caption += `*Estado:* ${status === 'libre' ? 'Libre' : 'Domado'}\n`;
 
-            if (infoGrupo.owner) {
-                const ownerId = infoGrupo.owner.split('@')[0];
-                caption += `*Dueño:* @${ownerId}\n`;
+            if (owner) {
+                caption += `*Dueño:* @${owner.split('@')[0]}\n`;
             }
 
             const sent = await conn.sendMessage(m.chat, { 
                 image: { url: imageUrl }, 
                 caption: caption,
-                mentions: infoGrupo.owner ? [infoGrupo.owner] : []
+                mentions: owner ? [owner] : []
             }, { quoted: m });
 
+            if (!global.db.data.chats[group]) global.db.data.chats[group] = {};
             if (!global.db.data.chats[group].rolls) global.db.data.chats[group].rolls = {};
+            
             global.db.data.chats[group].rolls[sent.key.id] = { 
                 id: randomId, 
-                expiresAt: ahora + 60000 
+                expiresAt: ahora.getTime() + 60000 
             };
 
-            userDb.lastGachaRoll = ahora;
+            userDb.metadata = { ...userDb.metadata, lastGachaRoll: ahora.toISOString() };
+            await database.saveUser(userJid, userDb);
 
         } catch (e) {
             console.error(e);
