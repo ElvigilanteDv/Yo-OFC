@@ -14,11 +14,11 @@ const crimeCommand = {
         try {
             const userJid = m.sender;
             const ahora = new Date();
-            const cooldown = 20 * 60 * 1000;
+            const cooldown = 7 * 60 * 1000;
 
             let userDb = await database.getUser(userJid);
             if (!userDb) {
-                userDb = { wallet: 0, bank: 0, genre: 'No definido', marry: null, last_claim: new Date(0).toISOString() };
+                userDb = { wallet: 0, bank: 0, genre: 'No definido', marry: null, last_claim: '1970-01-01T00:00:00.000Z' };
             }
 
             const lastCrimeTime = new Date(userDb.last_claim).getTime();
@@ -43,11 +43,12 @@ const crimeCommand = {
                 texto += `${fr.text}\n`;
                 texto += `*${config.visuals.emoji} Ganaste:* ¥${recompensa.toLocaleString()}\n\n`;
                 texto += `> *Cartera:* ¥${userDb.wallet.toLocaleString()}`;
+                
                 await conn.sendMessage(m.chat, { text: texto }, { quoted: m });
             } else {
                 const multa = Math.floor(Math.random() * (2000 - 500 + 1)) + 500;
                 const currentWallet = Number(userDb.wallet || 0);
-                
+
                 if (currentWallet > 0) {
                     userDb.wallet = Math.max(0, currentWallet - multa);
                 }
@@ -55,7 +56,7 @@ const crimeCommand = {
                 const fail = failFrases[Math.floor(Math.random() * failFrases.length)];
                 let textoFail = `*${config.visuals.emoji2}* \`OPERACIÓN FALLIDA\`\n\n${fail}\n`;
                 if (currentWallet > 0) textoFail += `> *Multa pagada:* ¥${multa.toLocaleString()}`;
-                
+
                 m.reply(textoFail);
             }
 
