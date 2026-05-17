@@ -34,16 +34,75 @@ export const database = {
         await pool.query(q, [jid, welcome, antilink, detect]);
     },
     saveUser: async (jid, data) => {
-        const { wallet, bank, genre, marry } = data;
+        const { wallet, bank, genre, marry, last_claim } = data;
         const q = `
-            INSERT INTO users (jid, wallet, bank, genre, marry)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO users (jid, wallet, bank, genre, marry, last_claim)
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (jid) DO UPDATE SET
             wallet = EXCLUDED.wallet,
             bank = EXCLUDED.bank,
             genre = EXCLUDED.genre,
-            marry = EXCLUDED.marry;
+            marry = EXCLUDED.marry,
+            last_claim = EXCLUDED.last_claim;
         `;
-        await pool.query(q, [jid, wallet, bank, genre, marry]);
+        await pool.query(q, [jid, wallet || 0, bank || 0, genre || 'No definido', marry || null, last_claim || '1970-01-01 00:00:00']);
+    },
+    getHarem: async (groupJid, userJid) => {
+        const q = 'SELECT character_id FROM gacha_ownership WHERE group_jid = $1 AND user_jid = $2';
+        const res = await pool.query(q, [groupJid, userJid]);
+        return res.rows;
+    },
+    claimCharacter: async (groupJid, userJid, charId) => {
+        const q = `
+            INSERT INTO gacha_ownership (group_jid, user_jid, character_id, status)
+            VALUES ($1, $2, $3, 'domado')
+            ON CONFLICT (group_jid, character_id) DO UPDATE SET
+            user_jid = EXCLUDED.user_jid,
+            status = 'domado';
+        `;
+        await pool.query(q, [groupJid, userJid, charId]);
+    },
+    getCharacterOwner: async (groupJid, charId) => {
+        const q = 'SELECT user_jid, status FROM gacha_ownership WHERE group_jid = $1 AND character_id = $2';
+        const res = await pool.query(q, [groupJid, charId]);
+        return res.rows[0] || null;
+    },
+    listShop: async (groupJid) => {
+        const q = 'SELECT * FROM gacha_shop WHERE group_jid = $1 ORDER BY listed_at DESC';
+        const res = await pool.query(q, [groupJid]);
+        return res.rows;
+    },
+    listCharacter: async (groupJid, sellerJid, charId, charName, price) => {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('INSERT INTO gacha_shop (group_jid, seller_jid, character_id, character_name, sale_price) VALUES ($1, $2, $3, $4, $5)', [groupJid, sellerJid, charId, charName, price]);
+            await client.query("UPDATE gacha_ownership SET status = 'en_venta' WHERE group_jid = $1 AND character_id = $2", [groupJid, charId]);
+            await client.query('COMMIT');
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
+    },
+    buyCharacter: async (groupJid, buyerJid, charId, price) => {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const shopRes = await client.query('SELECT seller_jid FROM gacha_shop WHERE group_jid = $1 AND character_id = $2', [groupJid, charId]);
+            const sellerJid = shopRes.rows[0].seller_jid;
+            await client.query('UPDATE users SET wallet = wallet - $1 WHERE jid = $2', [price, buyerJid]);
+            await client.query('UPDATE users SET wallet = wallet + $1 WHERE jid = $2', [price, sellerJid]);
+            await client.query("UPDATE gacha_ownership SET user_jid = $1, status = 'domado' WHERE group_jid = $2 AND character_id = $3", [buyerJid, groupJid, charId]);
+            await client.query('DELETE FROM gacha_shop WHERE group_jid = $1 AND character_id = $2', [groupJid, charId]);
+            await client.query('COMMIT');
+            return sellerJid;
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 };
