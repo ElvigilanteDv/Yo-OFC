@@ -20,14 +20,10 @@ const balanceCommand = {
             }
 
             const targetJid = rawJid.replace(/:.*@/g, '@');
-            let userDb = await database.getUser(targetJid);
+            const userDb = await database.getUser(targetJid);
 
-            if (!userDb) {
-                userDb = { wallet: 0, bank: 0 };
-            }
-
-            const wallet = parseInt(userDb.wallet || 0);
-            const bank = parseInt(userDb.bank || 0);
+            const wallet = userDb ? parseInt(userDb.wallet || 0) : 0;
+            const bank = userDb ? parseInt(userDb.bank || 0) : 0;
             const total = wallet + bank;
             const userId = targetJid.split('@')[0];
 
