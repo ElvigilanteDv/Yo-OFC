@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 
 const balanceCommand = {
     name: 'balance',
@@ -19,17 +20,16 @@ const balanceCommand = {
             }
 
             const targetJid = rawJid.replace(/:.*@/g, '@');
+            let userDb = await database.getUser(targetJid);
 
-            if (!global.db.data.users[targetJid]) {
-                global.db.data.users[targetJid] = { wallet: 0, bank: 0 };
+            if (!userDb) {
+                userDb = { wallet: 0, bank: 0 };
             }
 
-            const userDb = global.db.data.users[targetJid];
-            const userId = targetJid.split('@')[0];
-
-            const wallet = userDb.wallet || 0;
-            const bank = userDb.bank || 0;
+            const wallet = parseInt(userDb.wallet || 0);
+            const bank = parseInt(userDb.bank || 0);
             const total = wallet + bank;
+            const userId = targetJid.split('@')[0];
 
             let texto = `*${config.visuals.emoji3} BALANCE DE CUENTA ${config.visuals.emoji3}*\n\n`;
             texto += `» *Cartera:* ¥${wallet.toLocaleString()}\n`;
