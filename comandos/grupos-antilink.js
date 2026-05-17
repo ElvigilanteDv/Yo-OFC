@@ -1,8 +1,10 @@
+import { database } from '../database.js';
+
 export default async function antiLinkHandler(conn, m) {
     if (!m.chat.endsWith('@g.us')) return;
 
-    const chat = global.db.data.chats[m.chat];
-    if (chat && chat.antilink === false) return;
+    const dbChat = await database.getChat(m.chat);
+    if (dbChat && dbChat.antilink === false) return;
 
     const body = (
         m.message.conversation || 
