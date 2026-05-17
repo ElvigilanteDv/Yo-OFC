@@ -186,40 +186,6 @@ async function startBot() {
             global.db.data.chats[m.chat] = dbChat;
         }
 
-        const realOwnerNumber = (typeof config.owner[0] === 'string' ? config.owner[0] : config.owner[0][0]).replace(/\D/g, '');
-        const senderNumber = m.sender.split('@')[0].replace(/\D/g, '');
-        const isRealOwner = senderNumber === realOwnerNumber || m.key.fromMe;
-
-        const body = (
-            m.message.conversation || 
-            m.message.extendedTextMessage?.text || 
-            m.message.imageMessage?.caption || 
-            m.message.videoMessage?.caption || 
-            m.message.buttonsResponseMessage?.selectedButtonId || 
-            m.message.listResponseMessage?.singleSelectReply?.selectedRowId || 
-            m.message.templateButtonReplyMessage?.selectedId || ""
-        ).trim();
-
-        const prefixes = config.allPrefixes || ['#', '!', '.'];
-        const foundPrefix = prefixes.find(p => body.startsWith(p));
-        const usedPrefix = foundPrefix || '';
-        const commandName = body.slice(usedPrefix.length).trim().split(/ +/).shift().toLowerCase();
-
-        if (!isGroup && !isRealOwner) {
-            const allowedPrivateCmds = ['code', 'codemood', 'setname', 'setbanner'];
-            if (!allowedPrivateCmds.includes(commandName)) return;
-        }
-
-        const cmd = global.commands.get(commandName) || Array.from(global.commands.values()).find(c => c.alias && c.alias.includes(commandName));
-        const isNoPrefixCmd = Array.from(global.commands.values()).some(cmd => 
-            cmd.noPrefix && (
-                body.toLowerCase().startsWith(cmd.name.toLowerCase()) || 
-                (cmd.alias && cmd.alias.some(a => body.toLowerCase().startsWith(a.toLowerCase())))
-            )
-        );
-
-        if (m.key.fromMe && !foundPrefix && !isNoPrefixCmd) return;
-
         global.lastMessageMap.set(m.sender, Date.now());
         m.reply = async (text) => conn.sendMessage(m.chat, { text }, { quoted: m });
         m.download = async () => downloadMediaMessage(m, 'buffer', {}, { logger: P({ level: 'silent' }) });
@@ -249,13 +215,11 @@ async function startBot() {
         await antiLinkHandler(conn, m);
         await pixelHandler(conn, m, config);
 
-        if (cmd || isNoPrefixCmd) {
-            const commandToRun = cmd || Array.from(global.commands.values()).find(c => c.noPrefix && body.toLowerCase().startsWith(c.name.toLowerCase()));
-            if (commandToRun) {
-                await commandToRun.run(conn, m, { usedPrefix, commandName, database });
-                await database.saveUser(m.sender, global.db.data.users[m.sender]);
-                if (isGroup) await database.saveChat(m.chat, global.db.data.chats[m.chat]);
-            }
+        try {
+            await database.saveUser(m.sender, global.db.data.users[m.sender]);
+            if (isGroup) await database.saveChat(m.chat, global.db.data.chats[m.chat]);
+        } catch (dbErr) {
+            console.error(dbErr);
         }
     });
 }
