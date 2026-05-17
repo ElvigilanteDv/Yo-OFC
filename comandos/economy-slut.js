@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { database } from '../database.js';
 import { winFrases, loseFrases } from './frases/slut.js';
 
 const slutCommand = {
@@ -10,14 +11,14 @@ const slutCommand = {
 
     run: async (conn, m) => {
         try {
-            const user = m.sender.replace(/:.*@/g, '@');
+            const userJid = m.sender;
             const ahora = Date.now();
             const cooldown = 10 * 60 * 1000;
 
-            if (!global.db.data.users[user]) global.db.data.users[user] = {};
-            const userDb = global.db.data.users[user];
+            let userDb = await database.getUser(userJid);
+            if (!userDb) userDb = { wallet: 0, bank: 0, lastSlut: 0 };
 
-            const tiempoPasado = ahora - (userDb.lastSlut || 0);
+            const tiempoPasado = ahora - (Number(userDb.lastSlut) || 0);
 
             if (tiempoPasado < cooldown) {
                 const restante = Math.floor((cooldown - tiempoPasado) / 60000);
@@ -27,10 +28,11 @@ const slutCommand = {
 
             const esPerdida = Math.random() < 0.03;
             const monto = Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000;
+            const currentWallet = Number(userDb.wallet || 0);
 
             if (esPerdida) {
                 const frase = loseFrases[Math.floor(Math.random() * loseFrases.length)];
-                userDb.wallet = Math.max(0, (userDb.wallet || 0) - monto);
+                userDb.wallet = Math.max(0, currentWallet - monto);
 
                 let msg = `*${config.visuals.emoji2}* \`MALA NOCHE\`\n\n`;
                 msg += `${frase}\n`;
@@ -39,7 +41,7 @@ const slutCommand = {
                 await m.reply(msg);
             } else {
                 const frase = winFrases[Math.floor(Math.random() * winFrases.length)];
-                userDb.wallet = (userDb.wallet || 0) + monto;
+                userDb.wallet = currentWallet + monto;
 
                 let msg = `*${config.visuals.emoji3}* \`NOCHE DE ÉXITO\` *${config.visuals.emoji3}*\n\n`;
                 msg += `${frase}\n`;
@@ -49,6 +51,7 @@ const slutCommand = {
             }
 
             userDb.lastSlut = ahora;
+            await database.saveUser(userJid, userDb);
 
         } catch (e) {
             console.error(e);
