@@ -8,6 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "github:ANDERSONTELLO/bails",
     "todleys": "github:Dev-FelixOfc/TodLeys",
     "@Dev-FelixOfc/databaselib": "github:Dev-FelixOfc/databaselib",
     "wimages-lib": "github:Dev-FelixOfc/WimagesLib",
@@ -32,4 +33,4 @@
     "yt-search": "^2.12.1",
     "ytdl-core": "latest"
   }
-}
+  }
